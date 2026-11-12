@@ -4,7 +4,7 @@ Zentrale Sammlung aller Anforderungen, Entscheidungen und Pläne zum Projekt. St
 
 ## 1. Projekt in Kürze
 
-- **Name:** Würfel-Blitz
+- **Name:** Würfel-Zähler
 - **Team:** 2 Personen
 - **Idee:** 3 Würfel und 1 Münze werden auf den Tisch geworfen. Die Münze bestimmt die Rechenart, und wer zuerst das richtige Ergebnis ruft, gewinnt die Runde.
 - **Rolle der KI:** Eine selbst trainierte KI erkennt per Kamera die Augenzahlen und die Münzseite. Das Programm nutzt das als Schiedsrichter, Mitspieler oder Cheat-Hilfe.
