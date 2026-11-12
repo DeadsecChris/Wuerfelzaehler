@@ -51,7 +51,7 @@ Beide Dokumente werden gemeinsam erstellt, aber von jedem Teammitglied einzeln e
 ## 4. Bilderkennung
 
 - **Verfahren:** Objekterkennung. Die KI findet jedes Objekt im Bild (Rahmen) und ordnet ihm eine Klasse zu.
-- **Objekte:** 3 gleiche weiße Würfel mit schwarzen Augen und immer dieselbe 1-Euro-Münze.
+- **Objekte:** 3 gleiche weiße Würfel mit schwarzen Augen und eine Euro-Münze. Gespielt wird mit 50 Cent, 1 Euro oder 2 Euro; die KI unterscheidet nur Kopf und Zahl, nicht die Münzart.
 - **Regel fürs Labeln:** Die Klasse eines Würfels ist die Augenzahl, die oben liegt. Der Rahmen umfasst den ganzen Würfel.
 
 | ID | Klassenname | Bildmotiv |
@@ -62,8 +62,8 @@ Beide Dokumente werden gemeinsam erstellt, aber von jedem Teammitglied einzeln e
 | 3 | `wuerfel_4` | Würfel, oben liegt die 4 |
 | 4 | `wuerfel_5` | Würfel, oben liegt die 5 |
 | 5 | `wuerfel_6` | Würfel, oben liegt die 6 |
-| 6 | `muenze_kopf` | 1-Euro-Münze, Bildseite oben (Bundesadler) |
-| 7 | `muenze_zahl` | 1-Euro-Münze, Wertseite oben (Ziffer 1) |
+| 6 | `muenze_kopf` | Euro-Münze, Bildseite oben (50 Cent, 1 Euro oder 2 Euro) |
+| 7 | `muenze_zahl` | Euro-Münze, Wertseite oben (50 Cent, 1 Euro oder 2 Euro) |
 
 ## 5. Anwendungsprogramm
 
@@ -144,7 +144,8 @@ Das Programm ist der Spielleiter. Es rechnet mit den erkannten Klassen, prüft A
 - **Einzelaufnahmen (E1–E3):** genau ein Objekt, je Situation 5 Bilder pro Klasse.
 - **Wurfaufnahmen (W1–W5):** echte Spielsituation mit 3 Würfeln und Münze. W1 und W2 sind der geplante Spielaufbau.
 - **Lagen:** jedes Bild mit anderer Drehung und Position; bei etwa jedem fünften Wurf liegen die Objekte eng aneinander.
-- **Ausgewogenheit:** Eine Strichliste hält fest, wie oft jede Klasse fotografiert wurde. Seltene Klassen werden gezielt von Hand gelegt.
+- **Münzen:** Die drei Münzen wechseln sich ab, jede liegt in rund 60 Wurfaufnahmen.
+- **Ausgewogenheit:** Eine Strichliste hält fest, wie oft jede Klasse und jede Münzart fotografiert wurde. Seltene Klassen werden gezielt von Hand gelegt.
 
 ### Umfang
 
@@ -171,7 +172,7 @@ Jede Klasse ist rund 105-mal in den Originalbildern zu sehen.
 | Unschärfe | leicht |
 
 - Jede Variante kombiniert zufällig 2 bis 3 Verfahren.
-- **Kein Spiegeln:** Ziffer und Adler der Münze wären sonst spiegelverkehrt.
+- **Kein Spiegeln:** Ziffern und Motive der Münzen wären sonst spiegelverkehrt.
 - Beim Zuschneiden bleiben alle Objekte vollständig im Bild.
 
 ### Aufteilung
@@ -216,8 +217,8 @@ wuerfel-zaehler/
 
 | Person | Aufgaben |
 |---|---|
-| Person 1 | Aufbau und Fotoaufnahmen, Organisation der Bilddaten (Benennung, Ordnerstruktur, Aufnahmeprotokoll) |
-| Person 2 | Bildvariation, Aufteilung der Daten, Training und Auswertung des Modells, Anwendungsprogramm |
+| Person 1 | Aufbau und Fotoaufnahmen, Organisation der Bilddaten (Benennung, Ordnerstruktur, Aufnahmeprotokoll), Training und Auswertung des Modells |
+| Person 2 | Bildvariation (Skript), Aufteilung der Daten, Anwendungsprogramm |
 | Gemeinsam | Labeln der 300 Originalbilder, Testen des Spiels, Dokumentation und Präsentation |
 
 ## 9. Zeitplan
@@ -231,7 +232,7 @@ wuerfel-zaehler/
 ## 10. Risiken
 
 - **Falsch erkannter Würfel:** Ein einzelner Fehler verfälscht das Ergebnis, besonders beim Multiplizieren. Dagegen helfen genug Trainingsfotos und die Kontrollanzeige an jedem Objekt.
-- **Münze:** Sie glänzt, und beide Seiten können sich ähneln. Immer dieselbe Münze verwenden und beide Seiten gleich oft fotografieren.
+- **Münzen:** Sie glänzen, und die drei Münzarten sehen unterschiedlich aus. Alle drei Münzen mit beiden Seiten gleich oft fotografieren.
 - **Verdeckung:** Würfel und Münze können aufeinander landen. Eine Wurffläche mit Rand (z. B. ein Tablett) verwenden.
 - **Licht und Hintergrund:** Wechselnde Bedingungen stören die Erkennung. Die Trainingsfotos decken deshalb mehrere Situationen ab.
 
@@ -239,5 +240,5 @@ wuerfel-zaehler/
 
 - Mit der Lehrkraft klären, ob ein vortrainiertes Modell als Startpunkt erlaubt ist.
 - Namen und endgültige Rollenverteilung in Lastenheft und Drehbuch eintragen.
-- Material bestätigen: Würfel, Münze, Hintergründe (Filz, Holztisch, weißes Papier), Kamera.
+- Material bestätigen: Würfel, Münzen, Hintergründe (Filz, Holztisch, weißes Papier), Kamera.
 - Festlegen, wer nach einer richtigen Antwort die nächste Runde würfelt.
