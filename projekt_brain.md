@@ -5,9 +5,10 @@ Zentrale Sammlung aller Anforderungen, Entscheidungen und Pläne zum Projekt. St
 ## 1. Projekt in Kürze
 
 - **Name:** Würfel-Zähler
-- **Team:** 2 Personen
+- **Team:** Christian Maschke, Niklas Bäricke
 - **Idee:** 3 Würfel und 1 Münze werden auf den Tisch geworfen. Die Münze bestimmt die Rechenart, und wer zuerst das richtige Ergebnis ruft, gewinnt die Runde.
-- **Rolle der KI:** Eine selbst trainierte KI erkennt per Kamera die Augenzahlen und die Münzseite. Das Programm nutzt das als Schiedsrichter, Mitspieler oder Cheat-Hilfe.
+- **Rolle der KI:** Eine selbst trainierte KI erkennt per Kamera die Augenzahlen und die Münzseite. Das Programm berechnet daraus das Ergebnis und zeigt es an (Schiedsrichter bzw. Cheat-Hilfe).
+- **Umfang (Lastenheft vom 12.11.2026):** Kein Mitspieler-Modus, keine Antwortprüfung und kein Punktestand im Programm. Die Spielregeln unten gelten am Tisch, das Programm liefert nur das richtige Ergebnis.
 - **Vorgabe:** Die KI muss selbst trainiert werden, lokal und ohne Teachable Machine.
 
 ## 2. Spielregeln
@@ -16,13 +17,12 @@ Zentrale Sammlung aller Anforderungen, Entscheidungen und Pläne zum Projekt. St
 - **Zahl:** Augenzahlen multiplizieren (Ergebnis 1 bis 216).
 - **Richtige Antwort:** 1 Punkt, und man darf einen Schluck verteilen.
 - **Falsche Antwort:** Strafschluck, und man würfelt die nächste Runde.
-- **KI als Mitspieler:** Ist sie schneller als alle Spieler, geht der Punkt an die KI.
 
 ## 3. Abgaben
 
 | Abgabe | Fällig | Status |
 |---|---|---|
-| Vereinfachtes Lastenheft | 12.11.2026, 22:00 | Dokument erstellt, Namen fehlen noch |
+| Vereinfachtes Lastenheft | 12.11.2026, 22:00 | Fertig, Namen eingetragen |
 | Drehbuch Bilderstellung | 18.11.2026, 22:00 | Dokument erstellt, Namen fehlen noch |
 
 Beide Dokumente werden gemeinsam erstellt, aber von jedem Teammitglied einzeln eingereicht.
@@ -51,7 +51,8 @@ Beide Dokumente werden gemeinsam erstellt, aber von jedem Teammitglied einzeln e
 ## 4. Bilderkennung
 
 - **Verfahren:** Objekterkennung. Die KI findet jedes Objekt im Bild (Rahmen) und ordnet ihm eine Klasse zu.
-- **Objekte:** 3 gleiche weiße Würfel mit schwarzen Augen und eine Euro-Münze. Gespielt wird mit 50 Cent, 1 Euro oder 2 Euro; die KI unterscheidet nur Kopf und Zahl, nicht die Münzart.
+- **Objekte:** 3 gleiche weiße Würfel mit schwarzen Augen und immer dieselbe 1-Euro-Münze (Entscheidung 12.11.2026: keine wechselnden Münzen, weil die Kopfseiten je nach Land und Münzart verschieden aussehen).
+- **Ungültige Würfe:** Eine zusätzliche Klasse für ungültige Lagen ist bewusst offen und wird im Laufe der Entwicklung entschieden.
 - **Regel fürs Labeln:** Die Klasse eines Würfels ist die Augenzahl, die oben liegt. Der Rahmen umfasst den ganzen Würfel.
 
 | ID | Klassenname | Bildmotiv |
@@ -62,46 +63,38 @@ Beide Dokumente werden gemeinsam erstellt, aber von jedem Teammitglied einzeln e
 | 3 | `wuerfel_4` | Würfel, oben liegt die 4 |
 | 4 | `wuerfel_5` | Würfel, oben liegt die 5 |
 | 5 | `wuerfel_6` | Würfel, oben liegt die 6 |
-| 6 | `muenze_kopf` | Euro-Münze, Bildseite oben (50 Cent, 1 Euro oder 2 Euro) |
-| 7 | `muenze_zahl` | Euro-Münze, Wertseite oben (50 Cent, 1 Euro oder 2 Euro) |
+| 6 | `muenze_kopf` | 1-Euro-Münze, Bildseite oben |
+| 7 | `muenze_zahl` | 1-Euro-Münze, Wertseite oben (Ziffer 1) |
 
 ## 5. Anwendungsprogramm
 
-Das Programm ist der Spielleiter. Es rechnet mit den erkannten Klassen, prüft Antworten und steuert den Spielablauf.
+Das Programm erkennt den Wurf, prüft ihn und berechnet das Ergebnis. Die reine Anzeige der Klassen reicht laut Vorgabe nicht, deshalb rechnet es mit den erkannten Klassen.
 
 ### Funktionen
 
-- **Wurf erkennen:** warten, bis Würfel und Münze ruhig liegen (Erkennung über ca. 10 Kamerabilder gleich).
+- **Kameraübertragung:** Nach Druck auf den Start-Button („Scharfschalten“) sendet das Programm laufend Kamerabilder an das KI-Modell.
 - **Vollständigkeit prüfen:** gewertet wird nur bei genau 3 Würfeln und 1 Münze, sonst Hinweis „Bitte neu würfeln“.
-- **Ergebnis berechnen:** Summe bei Kopf, Produkt bei Zahl.
-- **Antwort prüfen:** Der Spielleiter wählt per Tastatur den Spieler und tippt dessen Antwort ein; das Programm vergleicht.
-- **Wertung:** Punkt und Schluck-Anzeige bei richtiger Antwort, Strafschluck und neuer Würfler bei falscher Antwort.
-- **Modus „Mitspieler“:** Die KI nennt das Ergebnis nach einstellbarer Verzögerung (z. B. 2 bis 6 Sekunden) per Anzeige und Ton.
-- **Modus „Cheat“:** Ergebnis und Rechenweg erscheinen sofort.
-- **Spielstand:** Punktestand, Rundenzähler und nächster Würfler werden dauerhaft angezeigt.
-- **Kontrollanzeige:** Rahmen, Klasse und Sicherheit an jedem Objekt im Livebild.
+- **Ergebnis berechnen:** Den Würfelklassen werden Zahlenwerte zugeordnet; Summe bei Kopf, Produkt bei Zahl.
+- **Ergebnisausgabe:** Das Ergebnis erscheint als Text.
 
 ### Technische Anforderungen
 
-- **Eingabe:** Livebild einer Webcam (oder Handy als Webcam), fest über der Wurffläche in ca. 30 bis 50 cm Höhe. Zum Testen auch einzelne Bilddateien.
-- **Verarbeitung:** Nur Erkennungen mit Sicherheit ab 50 % zählen (einstellbar). Ergebnis spätestens 1 Sekunde nach Stillstand.
+- **Eingabe:** Livebild einer Webcam (oder Handy als Webcam) über der Wurffläche, Start-Button. Zum Testen auch einzelne Bilddateien.
+- **Verarbeitung:** Nur Erkennungen mit Sicherheit ab 50 % zählen (einstellbar). Ein Wurf gilt als stabil nach ca. 5 gleichen Kamerabildern. Ergebnis spätestens 2 Sekunden nach Stillstand.
 - **Leistung:** mindestens 10 Bilder pro Sekunde auf einem Laptop ohne Grafikkarte.
-- **Ausgabe:** Programmfenster mit Livebild und Statusbereich, Signalton, Fehlerhinweise.
-- **Bedienung:** Tastatur (Modus wechseln, Spieler wählen, Antwort eingeben, neue Runde, beenden).
+- **Ausgabe:** Livebild, Ergebnis in Textform, Hinweise bei Fehlern (zu wenige/zu viele Objekte, zu unsichere Erkennung).
+- **Oberfläche:** Programmfenster mit Livebild, Statusbereich und Start-Button.
 - **Ziel:** mindestens 90 % der Würfe werden im festgelegten Aufbau vollständig richtig erkannt.
 
 ### Programmablauf
 
-1. **Start:** Modell laden, Kamera öffnen, Spieler und Modus abfragen.
-2. **Bilderfassung:** Die Kamera liefert laufend Einzelbilder.
+1. **Start:** Modell laden, Kamera öffnen, auf den Start-Button warten.
+2. **Bilderfassung:** Die Kamera liefert laufend Bilder an das Modell.
 3. **Erkennung:** Das Modell liefert pro Objekt Rahmen, Klasse und Sicherheit.
 4. **Filterung:** Unsichere Erkennungen verwerfen, auf ein stabiles Ergebnis warten.
 5. **Prüfung:** Genau 3 Würfel und 1 Münze? Sonst Hinweis und zurück zu Schritt 2.
-6. **Berechnung:** Summe oder Produkt, je nach Münzseite.
-7. **Reaktion je Modus:** Cheat zeigt sofort an, Mitspieler startet die Antwortzeit der KI.
-8. **Antwort:** Spieler und gerufene Zahl eingeben, Vergleich mit dem Ergebnis.
-9. **Wertung:** Punkte, Schluck-Anzeige, nächster Würfler.
-10. **Neue Runde:** auf Tastendruck zurück zu Schritt 2.
+6. **Wertzuteilung und Berechnung:** Augenzahlen und Rechenart aus den Klassen, Summe oder Produkt.
+7. **Ausgabe:** Ergebnis als Text anzeigen.
 
 ## 6. KI-Modell und Werkzeuge
 
@@ -118,7 +111,7 @@ Das Programm ist der Spielleiter. Es rechnet mit den erkannten Klassen, prüft A
 
 ### Training
 
-- Lokal auf dem eigenen Laptop, ohne Cloud-Dienst.
+- Lokal auf dem eigenen Laptop, ohne Cloud-Dienst und ohne Teachable Machine.
 - Vortrainiertes YOLO-Modell als Startpunkt, nachtrainiert auf die 8 Klassen (Transfer Learning).
 - Bildgröße 640 Pixel, ca. 50 bis 100 Epochen.
 - Auswertung auf den Testbildern: Verwechslungsmatrix, Präzision und Trefferquote je Klasse.
@@ -144,8 +137,7 @@ Das Programm ist der Spielleiter. Es rechnet mit den erkannten Klassen, prüft A
 - **Einzelaufnahmen (E1–E3):** genau ein Objekt, je Situation 5 Bilder pro Klasse.
 - **Wurfaufnahmen (W1–W5):** echte Spielsituation mit 3 Würfeln und Münze. W1 und W2 sind der geplante Spielaufbau.
 - **Lagen:** jedes Bild mit anderer Drehung und Position; bei etwa jedem fünften Wurf liegen die Objekte eng aneinander.
-- **Münzen:** Die drei Münzen wechseln sich ab, jede liegt in rund 60 Wurfaufnahmen.
-- **Ausgewogenheit:** Eine Strichliste hält fest, wie oft jede Klasse und jede Münzart fotografiert wurde. Seltene Klassen werden gezielt von Hand gelegt.
+- **Ausgewogenheit:** Eine Strichliste hält fest, wie oft jede Klasse fotografiert wurde. Seltene Klassen werden gezielt von Hand gelegt.
 
 ### Umfang
 
@@ -172,7 +164,7 @@ Jede Klasse ist rund 105-mal in den Originalbildern zu sehen.
 | Unschärfe | leicht |
 
 - Jede Variante kombiniert zufällig 2 bis 3 Verfahren.
-- **Kein Spiegeln:** Ziffern und Motive der Münzen wären sonst spiegelverkehrt.
+- **Kein Spiegeln:** Ziffer und Motiv der Münze wären sonst spiegelverkehrt.
 - Beim Zuschneiden bleiben alle Objekte vollständig im Bild.
 
 ### Aufteilung
@@ -217,9 +209,9 @@ wuerfel-zaehler/
 
 | Person | Aufgaben |
 |---|---|
-| Person 1 | Aufbau und Fotoaufnahmen, Organisation der Bilddaten (Benennung, Ordnerstruktur, Aufnahmeprotokoll), Training und Auswertung des Modells |
-| Person 2 | Bildvariation (Skript), Aufteilung der Daten, Anwendungsprogramm |
-| Gemeinsam | Labeln der 300 Originalbilder, Testen des Spiels, Dokumentation und Präsentation |
+| Niklas Bäricke | Aufbau und Bilderstellung |
+| Christian Maschke | Training, Codeentwicklung und Softwareumgebung |
+| Gemeinsam | Testen, Auswerten, Trainings-/Entwicklungsplanung, Labeln der Bilder, Bildvariation und Organisation des Datensatzes, Dokumentation und Präsentation |
 
 ## 9. Zeitplan
 
@@ -227,18 +219,17 @@ wuerfel-zaehler/
 |---|---|
 | 1 | Aufbau festlegen, Python einrichten, Fotos aufnehmen und labeln, erstes Probemodell mit ca. 50 Bildern |
 | 2 | Modell trainieren, mit der Verwechslungsmatrix testen, bei Schwächen Fotos nachlegen |
-| 3 | Programm mit Webcam, Punktestand und beiden Modi fertigstellen, Präsentation vorbereiten |
+| 3 | Programm mit Webcam, Vollständigkeitsprüfung und Ergebnisanzeige fertigstellen, Präsentation vorbereiten |
 
 ## 10. Risiken
 
 - **Falsch erkannter Würfel:** Ein einzelner Fehler verfälscht das Ergebnis, besonders beim Multiplizieren. Dagegen helfen genug Trainingsfotos und die Kontrollanzeige an jedem Objekt.
-- **Münzen:** Sie glänzen, und die drei Münzarten sehen unterschiedlich aus. Alle drei Münzen mit beiden Seiten gleich oft fotografieren.
+- **Münze:** Sie glänzt, und beide Seiten können sich ähneln. Immer dieselbe Münze verwenden und beide Seiten gleich oft fotografieren.
 - **Verdeckung:** Würfel und Münze können aufeinander landen. Eine Wurffläche mit Rand (z. B. ein Tablett) verwenden.
 - **Licht und Hintergrund:** Wechselnde Bedingungen stören die Erkennung. Die Trainingsfotos decken deshalb mehrere Situationen ab.
 
 ## 11. Offene Punkte
 
 - Mit der Lehrkraft klären, ob ein vortrainiertes Modell als Startpunkt erlaubt ist.
-- Namen und endgültige Rollenverteilung in Lastenheft und Drehbuch eintragen.
-- Material bestätigen: Würfel, Münzen, Hintergründe (Filz, Holztisch, weißes Papier), Kamera.
-- Festlegen, wer nach einer richtigen Antwort die nächste Runde würfelt.
+- Namen und Rollenverteilung im Drehbuch eintragen (im Lastenheft erledigt).
+- Material bestätigen: Würfel, Münze, Hintergründe (Filz, Holztisch, weißes Papier), Kamera.
