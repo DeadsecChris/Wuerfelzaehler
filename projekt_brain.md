@@ -1,4 +1,4 @@
-# Projekt-Brain: Würfel-Blitz
+# Projekt-Brain: Würfel-Zähler
 
 Zentrale Sammlung aller Anforderungen, Entscheidungen und Pläne zum Projekt. Stand: 12.11.2026.
 
@@ -194,7 +194,7 @@ Jede Klasse ist rund 105-mal in den Originalbildern zu sehen.
 - **Klassenzuordnung:** über eine Label-Datei pro Bild mit gleichem Namen (`.txt`, eine Zeile pro Objekt mit Klassen-ID und Rahmen), nicht über Klassenordner.
 
 ```
-wuerfel-blitz/
+wuerfel-zaehler/
 ├── rohbilder/              Originalfotos, unverändert (Sicherung)
 │   ├── einzel/
 │   ├── wurf/
