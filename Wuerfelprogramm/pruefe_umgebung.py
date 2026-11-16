@@ -37,6 +37,16 @@ def pruefe_pakete() -> bool:
         except ImportError:
             print(f"{FEHLT} {name}  -> pip install -r requirements.txt")
             alles_ok = False
+
+    # opencv-python-headless (kommt manchmal mit albumentations) hat keine Fenster-Funktionen
+    try:
+        from importlib.metadata import version
+        version("opencv-python-headless")
+        print(f"{FEHLT} opencv-python-headless ist installiert: Kamerafenster funktionieren dann nicht.")
+        print("             -> einrichten.bat erneut ausführen (behebt das automatisch)")
+        alles_ok = False
+    except Exception:
+        pass
     return alles_ok
 
 

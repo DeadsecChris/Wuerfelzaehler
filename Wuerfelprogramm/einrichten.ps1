@@ -133,6 +133,15 @@ Ok "PyTorch"
 Schritt "4. Pakete aus requirements.txt"
 & $venvPy -m pip install -r (Join-Path $PSScriptRoot "requirements.txt")
 if ($LASTEXITCODE -ne 0) { Fehler "Pakete aus requirements.txt konnten nicht installiert werden." }
+# albumentations bringt oft opencv-python-headless mit. Das ueberschreibt cv2 ohne
+# Fenster-Funktionen (cv2.imshow geht dann nicht). Deshalb nur opencv-python behalten.
+& $venvPy -m pip show opencv-python-headless *> $null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Ersetze opencv-python-headless durch opencv-python (fuer Kamerafenster) ..."
+    & $venvPy -m pip uninstall -y opencv-python-headless opencv-python
+    & $venvPy -m pip install opencv-python
+    if ($LASTEXITCODE -ne 0) { Fehler "opencv-python konnte nicht installiert werden." }
+}
 Ok "requirements.txt"
 
 # --- 5. Label Studio (optional, eigene Umgebung) ----------------------------
@@ -156,8 +165,11 @@ if (Test-Path $lsExe) {
 
 # --- 6. Pruefen -------------------------------------------------------------
 Schritt "6. Pruefung"
-& $venvPy (Join-Path $PSScriptRoot "pruefe_umgebung.py")
-if ($LASTEXITCODE -ne 0) { Fehler "Die Pruefung hat fehlende Pakete gemeldet." }
+$env:PYTHONIOENCODING = "utf-8"
+$pruefung = & $venvPy (Join-Path $PSScriptRoot "pruefe_umgebung.py") 2>&1
+$pruefCode = $LASTEXITCODE
+$pruefung | ForEach-Object { Write-Host $_ }
+if ($pruefCode -ne 0) { Fehler "Die Pruefung hat fehlende Pakete gemeldet." }
 
 Write-Host ""
 Write-Host "Fertig. Kameratest:" -ForegroundColor Green
