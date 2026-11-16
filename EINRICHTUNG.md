@@ -6,12 +6,13 @@ Für den Laptop (Entwicklung, Programm) und den Gaming-PC (Training). Auf beiden
 
 1. Git und VS Code installieren (Schritt 1), Repo holen (Schritt 2).
 2. Im Ordner `Wuerfelprogramm` **`einrichten.bat` doppelklicken.** Das Skript
-   - prüft Python 3.11 und bietet an, es per `winget` zu installieren,
+   - sucht ein passendes Python (3.10 bis 3.13, bevorzugt 3.11) und bietet sonst die Installation per `winget` an,
    - legt die virtuelle Umgebung `.venv` an,
    - installiert PyTorch passend zum Rechner (mit NVIDIA-Grafikkarte automatisch die CUDA-Variante),
    - installiert alles aus `requirements.txt`,
    - fragt, ob Label Studio in einer eigenen Umgebung mitinstalliert werden soll (Start dann mit `labelstudio_starten.bat`),
-   - prüft am Ende alles mit `pruefe_umgebung.py`.
+   - prüft am Ende alles mit `pruefe_umgebung.py`,
+   - schreibt alles in `Wuerfelprogramm/einrichten.log` (bei Problemen diese Datei schicken).
 3. Das Skript kann beliebig oft laufen. Vorhandenes bleibt, nur Fehlendes wird nachinstalliert (z. B. nach neuen Einträgen in `requirements.txt`).
 
 Die folgenden Schritte beschreiben dasselbe von Hand, falls das Skript hängt.
