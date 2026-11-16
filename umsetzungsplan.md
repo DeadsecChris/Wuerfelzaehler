@@ -1,6 +1,6 @@
 # Umsetzungsplan: Würfel-Zähler
 
-Stand: 16.11.2026 (2. Fassung). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
+Stand: 16.11.2026 (3. Fassung: Ober- und Unterklassen auch für die Münze). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
 
 ## Vorgaben vom 16.11.2026
 
@@ -15,30 +15,34 @@ Stand: 16.11.2026 (2. Fassung). Grundlage: Lastenheft vom 12.11.2026, `projekt_b
 ## Ansatz: zweistufige Erkennung
 
 ```
-Kamerabild ──► Stufe 1: YOLO findet Objekte (Form)
-                 ├─ "wuerfel"      ──► Ausschnitt ──► Stufe 2: Augenzahl
-                 ├─ "muenze_kopf"                        ├─ A: Kontrast-Augenzählung (OpenCV)
-                 └─ "muenze_zahl"                        └─ B: kleiner KI-Klassifizierer (Graustufen)
-                                                              ▼
-                                               A und B einig? ─ ja ──► Wert 1–6
-                                                              └ nein ─► "unsicher, bitte neu würfeln"
+Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
+                 ├─ "wuerfel" ──► Ausschnitt ──► Stufe 2: Unterklasse
+                 │                                 ├─ A: Kontrast-Augenzählung (OpenCV)
+                 │                                 └─ B: Klassifizierer → augen_1 … augen_6
+                 │                                      A und B einig? ─ ja ──► Wert 1–6
+                 │                                                     └ nein ─► "unsicher"
+                 └─ "muenze"  ──► Ausschnitt ──► Stufe 2: Klassifizierer → kopf / zahl
+                                                    (Würfel-Ausschnitt muss augen_x ergeben,
+                                                     Münz-Ausschnitt kopf/zahl, sonst "unsicher")
 ```
 
-**Stufe 1, Form (selbst trainierte KI):** YOLO nano mit nur **3 Klassen**: `wuerfel`, `muenze_kopf`, `muenze_zahl`. Die KI lernt, wie ein Würfel aussieht (Würfelform mit Punkten), egal welche Farbe. Damit das klappt, kommen im Datensatz möglichst viele verschiedene Würfel vor, und die Bilder werden im Training zusätzlich zufällig in Graustufen umgewandelt und im Farbton verschoben.
+**Stufe 1, Form = Oberklasse (selbst trainierte KI):** YOLO nano mit nur **2 Klassen**: `wuerfel` und `muenze`. Die KI lernt, wie ein Würfel aussieht (Würfelform mit Punkten), egal welche Farbe. Damit das klappt, kommen im Datensatz möglichst viele verschiedene Würfel vor, und die Bilder werden im Training zusätzlich zufällig in Graustufen umgewandelt und im Farbton verschoben.
 
-**Stufe 2, Augenzahl im Ausschnitt.** Hier wird Chris' Kontrast-Idee umgesetzt, abgesichert durch eine zweite Meinung:
+**Stufe 2, Unterklasse im Ausschnitt.** Für Würfel wird Chris' Kontrast-Idee umgesetzt, abgesichert durch eine zweite Meinung. Für die Münze entscheidet der Klassifizierer allein:
 
 - **A: Kontrast-Augenzählung (klassische Bildverarbeitung, kein Training):**
   1. Ausschnitt in Graustufen umwandeln, Kontrast ausgleichen (CLAHE).
   2. Adaptive Schwelle: Augen sind kleine runde Flecken, die sich stark vom Umfeld abheben. Beide Richtungen prüfen (dunkle Augen auf hellem Würfel und helle Augen auf dunklem Würfel); die Richtung mit den saubereren Flecken gewinnt.
   3. Flecken zählen, die rund genug sind, ähnlich groß sind und auf der oberen Fläche liegen (mittlerer Bereich des Ausschnitts). Ergebnis 1–6, alles andere ist „ungültig“.
   4. Sonderfälle: große oder farbige 1 bei manchen Würfeln, Glanzpunkte, sichtbare Seitenflächen bei schräger Kamera, verschmolzene Augen bei der 6.
-- **B: KI-Klassifizierer (selbst trainiert):** YOLO-Klassifikation nano (`yolo11n-cls`) mit 6 Klassen `augen_1` … `augen_6`, trainiert auf **Graustufen-Ausschnitten** der Würfel. Er kommt mit Fällen zurecht, an denen die Augenzählung scheitert (Spiegelungen, schräge Lage).
-- **Entscheidung:** Sind A und B einig, gilt der Wert. Sind sie uneinig, meldet das Programm „unsicher“. So ist ein falsches Ergebnis viel unwahrscheinlicher, was besonders beim Multiplizieren wichtig ist.
+- **B: KI-Klassifizierer (selbst trainiert):** YOLO-Klassifikation nano (`yolo11n-cls`) mit **8 Unterklassen** `augen_1` … `augen_6`, `kopf`, `zahl`, trainiert auf **Graustufen-Ausschnitten** von Würfeln und Münze. Ein Modell für alle Ausschnitte. Er kommt mit Fällen zurecht, an denen die Augenzählung scheitert (Spiegelungen, schräge Lage).
+- **Plausibilität:** Ein Würfel-Ausschnitt muss eine Augenzahl ergeben, ein Münz-Ausschnitt Kopf oder Zahl. Sonst „unsicher“.
+- **Vorteile der Ober-/Unterklassen auch bei der Münze:** einheitliches, gut erklärbares Prinzip (erst finden, dann genau hinschauen); Kopf/Zahl wird im vergrößerten Ausschnitt besser erkannt als im Gesamtbild (glänzende Münze); andere Münzen oder Würfel brauchen später nur neue Ausschnitte für Stufe 2. Nachteil: Fehler in zwei Stufen möglich, deshalb werden beide Stufen getrennt ausgewertet.
+- **Entscheidung Augenzahl:** Sind A und B einig, gilt der Wert. Sind sie uneinig, meldet das Programm „unsicher“. So ist ein falsches Ergebnis viel unwahrscheinlicher, was besonders beim Multiplizieren wichtig ist.
 
 **Warum nicht nur die Kontrast-Zählung?** Das Lastenheft verlangt eine selbst trainierte KI, die die Klassen erkennt. Mit Stufe 1 und dem Klassifizierer B ist das klar erfüllt, und die Kontrast-Zählung ist ein Zusatz, der das System robuster macht. In der Präsentation lässt sich außerdem zeigen, wie gut klassische Bildverarbeitung und KI jeweils allein sind und was ihre Kombination bringt.
 
-**Labeln bleibt fast gleich:** In Label Studio wird weiter mit den 8 Klassen aus dem Lastenheft gelabelt (`wuerfel_1` … `wuerfel_6`, `muenze_kopf`, `muenze_zahl`). Ein Skript macht daraus automatisch beide Datensätze: Für Stufe 1 werden `wuerfel_1–6` zu `wuerfel` zusammengefasst, für Stufe 2 werden die Würfel ausgeschnitten und nach Augenzahl sortiert. Einmal labeln, zwei Modelle trainieren.
+**Labeln bleibt fast gleich:** In Label Studio wird weiter mit den 8 Klassen aus dem Lastenheft gelabelt (`wuerfel_1` … `wuerfel_6`, `muenze_kopf`, `muenze_zahl`). Ein Skript macht daraus automatisch beide Datensätze: Für Stufe 1 werden `wuerfel_1–6` zu `wuerfel` und `muenze_kopf`/`muenze_zahl` zu `muenze` zusammengefasst, für Stufe 2 werden alle Objekte ausgeschnitten und nach Unterklasse sortiert. Einmal labeln, zwei Modelle trainieren.
 
 ## Folgen für die Dokumente
 
@@ -63,7 +67,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form)
 ## Schritte
 
 ### Schritt 0: Klären und Material (Woche 1)
-- [ ] Lehrkraft fragen: Ist ein vortrainiertes YOLO-Modell als Startpunkt erlaubt, und ist die zweistufige Lösung mit zusätzlicher Kontrast-Zählung in Ordnung?
+- [x] Lehrkraft lässt Freiraum (16.11.2026): erlaubt, solange die Mindestanforderungen erfüllt sind und wir alles erklären können. Damit sind vortrainiertes Modell und zweistufige Lösung in Ordnung.
 - [ ] Mindestens 8 verschiedene Standardwürfel sammeln (Spielesammlung, Freunde, 1-Euro-Laden), nummerieren (z. B. Aufkleber unten oder Liste mit Foto).
 - [ ] Wurffläche mit Rand und mindestens zwei Untergründe (dunkler Filz, heller Untergrund).
 - [ ] Kamera fest von oben montieren (ca. 40 cm). Zum Entwickeln Laptop- oder USB-Webcam.
@@ -86,7 +90,7 @@ Siehe „Folgen für die Dokumente“. Namen ergänzen.
 ### Schritt 3: Probedurchlauf (Woche 1)
 1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen.
 2. In Label Studio mit den 8 Klassen labeln, als YOLO exportieren.
-3. Skript `scripts/datensaetze.py` erzeugt daraus Stufe 1 (3 Klassen) und Stufe 2 (Ausschnitte).
+3. Skript `scripts/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
 4. Probemodell Stufe 1 mit 30 Epochen trainieren, Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
 Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 
@@ -100,8 +104,8 @@ Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 - Labeln mit den 8 Klassen, gegenseitige Stichprobenkontrolle (je 20 Bilder).
 - `scripts/datensaetze.py`:
   1. Aufteilung 70/15/15 der Originale **vor** der Augmentation (Test = Testsitzung).
-  2. Stufe 1: Klassen zusammenfassen, 3 Varianten je Trainingsbild mit Albumentations (Drehung, Helligkeit, Kontrast, Zuschnitt, **Graustufen**, **Farbton**, Rauschen, Unschärfe; kein Spiegeln).
-  3. Stufe 2: Würfel ausschneiden (mit etwas Rand), in Graustufen umwandeln, nach `augen_1` … `augen_6` sortieren. Hier darf gedreht und auch gespiegelt werden, weil Würfelaugen symmetrisch sind (anders als die Münze).
+  2. Stufe 1: Klassen zu `wuerfel` und `muenze` zusammenfassen, 3 Varianten je Trainingsbild mit Albumentations (Drehung, Helligkeit, Kontrast, Zuschnitt, **Graustufen**, **Farbton**, Rauschen, Unschärfe; kein Spiegeln).
+  3. Stufe 2: Würfel und Münze ausschneiden (mit etwas Rand), in Graustufen umwandeln, nach `augen_1` … `augen_6`, `kopf`, `zahl` sortieren. Drehen ist erlaubt; Spiegeln nur bei Würfel-Ausschnitten (Augen sind symmetrisch), nie bei der Münze.
 
 ### Schritt 6: Training (Christian, Woche 3, auf dem Gaming-PC)
 ```
@@ -112,8 +116,8 @@ yolo classify train data=dataset_stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50
 - Ergebnis: `modelle/stufe1.pt` und `modelle/stufe2.pt` (ins Repo, sind klein).
 
 ### Schritt 7: Auswertung (gemeinsam, Woche 3)
-- Stufe 1: `yolo detect val ... split=test` → Präzision, Trefferquote, Verwechslungsmatrix (Kopf/Zahl).
-- Stufe 2: Verwechslungsmatrix der Augenzahlen getrennt für A (Kontrast), B (KI) und A+B.
+- Stufe 1: `yolo detect val ... split=test` → Präzision und Trefferquote für `wuerfel` und `muenze`.
+- Stufe 2: Verwechslungsmatrix der 8 Unterklassen; für die Augenzahl getrennt für A (Kontrast), B (KI) und A+B.
 - Gesamtziel mit `scripts/eval_wuerfe.py`: **mindestens 90 % der Testwürfe vollständig richtig**, zusätzlich getrennt ausgewiesen für die fremden Würfel.
 - Bei Schwächen gezielt Fotos nachlegen (z. B. dunkle Würfel mit hellen Augen, schräge Lagen) und neu trainieren.
 
@@ -121,7 +125,8 @@ yolo classify train data=dataset_stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50
 Aufbau in `app/`:
 - `kamera.py`: **flexible Bildquelle** über Einstellung: Webcam-Nummer (`0`, `1`), Handy als Netzwerkkamera (URL, z. B. per DroidCam oder „IP Webcam“-App) oder Bilddatei zum Testen.
 - `stufe1.py`: Objekterkennung, Schwelle 50 % (einstellbar).
-- `augen.py`: Kontrast-Augenzählung (A) und Klassifizierer (B), Vergleich.
+- `stufe2.py`: Klassifizierer für alle Ausschnitte, Plausibilitätsprüfung.
+- `augen.py`: Kontrast-Augenzählung (A) und Vergleich mit dem Klassifizierer (B).
 - `spiel.py`: Vollständigkeit (genau 3 Würfel, 1 Münze), Summe oder Produkt, Rechenweg.
 - `main.py`: Fenster mit Livebild, Rahmen und erkannter Augenzahl an jedem Würfel, Statusbereich, Button „Scharfschalten“, Bilder pro Sekunde.
 - Stabilitätsfilter: Ergebnis nach 5 gleichen Bildern, spätestens 2 s nach Stillstand.
@@ -150,5 +155,4 @@ wuerfelzaehler/
 Fotos und Datensätze liegen lokal bzw. im OneDrive, nicht in GitHub.
 
 ## Noch offen
-1. Lehrkraft: vortrainiertes Modell erlaubt? Zweistufige Lösung in Ordnung?
-2. Wie viele verschiedene Würfel habt ihr schon?
+1. Wie viele verschiedene Würfel habt ihr schon?
