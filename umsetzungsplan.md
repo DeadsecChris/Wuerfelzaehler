@@ -1,6 +1,6 @@
 # Umsetzungsplan: Würfel-Zähler
 
-Stand: 16.11.2026 (3. Fassung: Ober- und Unterklassen auch für die Münze). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
+Stand: 16.11.2026 (4. Fassung: alle Euro-Münzen). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
 
 ## Vorgaben vom 16.11.2026
 
@@ -10,7 +10,7 @@ Stand: 16.11.2026 (3. Fassung: Ober- und Unterklassen auch für die Münze). Gru
 - **Kamera:** flexibel. Zum Entwickeln Laptop-Webcam oder USB-Webcam, später auch Handy.
 - **Abgabe des Programms:** 16.12.2026.
 - **Spielregeln bleiben:** Kopf = Summe, Zahl = Produkt. Keine Farbregel.
-- **Münze:** bleibt immer dieselbe 1-Euro-Münze.
+- **Münze (neu, Idee von Chris):** alle Euro-Münzen von 1 Cent bis 2 Euro, beliebiges Land. Die Wertseite ist in allen Euro-Ländern gleich, nur die Kopfseiten unterscheiden sich. Fremdwährungen dürfen als Kopf gewertet werden (bewusst akzeptierter Fehler).
 
 ## Ansatz: zweistufige Erkennung
 
@@ -36,6 +36,10 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
   3. Flecken zählen, die rund genug sind, ähnlich groß sind und auf der oberen Fläche liegen (mittlerer Bereich des Ausschnitts). Ergebnis 1–6, alles andere ist „ungültig“.
   4. Sonderfälle: große oder farbige 1 bei manchen Würfeln, Glanzpunkte, sichtbare Seitenflächen bei schräger Kamera, verschmolzene Augen bei der 6.
 - **B: KI-Klassifizierer (selbst trainiert):** YOLO-Klassifikation nano (`yolo11n-cls`) mit **8 Unterklassen** `augen_1` … `augen_6`, `kopf`, `zahl`, trainiert auf **Graustufen-Ausschnitten** von Würfeln und Münze. Ein Modell für alle Ausschnitte. Er kommt mit Fällen zurecht, an denen die Augenzählung scheitert (Spiegelungen, schräge Lage).
+- **Münze, Kopf/Zahl:**
+  - `zahl` wird mit allen Euro-Wertseiten trainiert: 1/2/5 Cent, 10/20/50 Cent, 1/2 Euro, jeweils alte und neue Europakarte (Kartenwechsel 2007, beide im Umlauf).
+  - `kopf` wird mit möglichst vielen verschiedenen Kopfseiten trainiert (Länder, 2-Euro-Gedenkmünzen). Es müssen nicht alle sein: Die KI lernt im Kern „das ist nicht die Wertseite“ und erkennt so auch unbekannte Kopfseiten. Nur Zahl-Bilder reichen nicht, weil ein Klassifizierer Gegenbeispiele braucht.
+  - **Dreifache Entscheidung** statt „keine Zahl = Kopf“: Sicherheit für Zahl ≥ 80 % → Zahl; ≤ 20 % → Kopf; dazwischen → „unsicher, bitte neu würfeln“ (Schwellen einstellbar). Sonst würde eine schlecht sichtbare Wertseite (Glanz, Unschärfe, Verdeckung) still zu Kopf, und das Programm addiert statt zu multiplizieren.
 - **Plausibilität:** Ein Würfel-Ausschnitt muss eine Augenzahl ergeben, ein Münz-Ausschnitt Kopf oder Zahl. Sonst „unsicher“.
 - **Vorteile der Ober-/Unterklassen auch bei der Münze:** einheitliches, gut erklärbares Prinzip (erst finden, dann genau hinschauen); Kopf/Zahl wird im vergrößerten Ausschnitt besser erkannt als im Gesamtbild (glänzende Münze); andere Münzen oder Würfel brauchen später nur neue Ausschnitte für Stufe 2. Nachteil: Fehler in zwei Stufen möglich, deshalb werden beide Stufen getrennt ausgewertet.
 - **Entscheidung Augenzahl:** Sind A und B einig, gilt der Wert. Sind sie uneinig, meldet das Programm „unsicher“. So ist ein falsches Ergebnis viel unwahrscheinlicher, was besonders beim Multiplizieren wichtig ist.
@@ -50,6 +54,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
   - „3 gleiche weiße Würfel“ ersetzen durch „verschiedene Standardwürfel“. Ziel: **mindestens 8 verschiedene Würfel** (verschiedene Farben, Größen, helle und dunkle Augen, runde und eckige Kanten). Pro Wurf werden 3 davon zufällig gewählt.
   - Strichliste führt **Würfel × Augenzahl**, damit jeder Würfel alle Augenzahlen zeigt.
   - Einzelaufnahmen: je Augenzahl mehrere verschiedene Würfel.
+  - Münzen: mehrere Münzen pro Wert (1 Cent bis 2 Euro) aus möglichst vielen Ländern sammeln, beide Seiten ungefähr gleich oft fotografieren, Strichliste **Wert × Seite**. Ein paar Kopfseiten (Länder) nur im Test verwenden.
   - Data Augmentation ergänzen: zufällige Graustufen, Farbtonverschiebung. Weiterhin **kein Spiegeln** (Münze).
   - **Testbilder mit 2 Würfeln, die im Training nie vorkamen.** So lässt sich zeigen, dass das Programm auch mit fremden Würfeln funktioniert.
 - **Lastenheft/`projekt_brain.md`:** Zweistufige Erkennung, verschiedene Würfel, flexible Kameraquelle, Termin 16.12.2026 nachtragen.
@@ -68,6 +73,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
 
 ### Schritt 0: Klären und Material (Woche 1)
 - [x] Lehrkraft lässt Freiraum (16.11.2026): erlaubt, solange die Mindestanforderungen erfüllt sind und wir alles erklären können. Damit sind vortrainiertes Modell und zweistufige Lösung in Ordnung.
+- [ ] Euro-Münzen sammeln: jeder Wert mindestens 2–3 Stück, möglichst verschiedene Länder und Gedenkmünzen. Ein paar Länder für den Test zurückhalten.
 - [ ] Mindestens 8 verschiedene Standardwürfel sammeln (Spielesammlung, Freunde, 1-Euro-Laden), nummerieren (z. B. Aufkleber unten oder Liste mit Foto).
 - [ ] Wurffläche mit Rand und mindestens zwei Untergründe (dunkler Filz, heller Untergrund).
 - [ ] Kamera fest von oben montieren (ca. 40 cm). Zum Entwickeln Laptop- oder USB-Webcam.
@@ -117,7 +123,7 @@ yolo classify train data=dataset_stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50
 
 ### Schritt 7: Auswertung (gemeinsam, Woche 3)
 - Stufe 1: `yolo detect val ... split=test` → Präzision und Trefferquote für `wuerfel` und `muenze`.
-- Stufe 2: Verwechslungsmatrix der 8 Unterklassen; für die Augenzahl getrennt für A (Kontrast), B (KI) und A+B.
+- Stufe 2: Verwechslungsmatrix der 8 Unterklassen, Kopf/Zahl zusätzlich getrennt für bekannte und unbekannte Kopfseiten; für die Augenzahl getrennt für A (Kontrast), B (KI) und A+B.
 - Gesamtziel mit `scripts/eval_wuerfe.py`: **mindestens 90 % der Testwürfe vollständig richtig**, zusätzlich getrennt ausgewiesen für die fremden Würfel.
 - Bei Schwächen gezielt Fotos nachlegen (z. B. dunkle Würfel mit hellen Augen, schräge Lagen) und neu trainieren.
 
@@ -125,7 +131,7 @@ yolo classify train data=dataset_stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50
 Aufbau in `app/`:
 - `kamera.py`: **flexible Bildquelle** über Einstellung: Webcam-Nummer (`0`, `1`), Handy als Netzwerkkamera (URL, z. B. per DroidCam oder „IP Webcam“-App) oder Bilddatei zum Testen.
 - `stufe1.py`: Objekterkennung, Schwelle 50 % (einstellbar).
-- `stufe2.py`: Klassifizierer für alle Ausschnitte, Plausibilitätsprüfung.
+- `stufe2.py`: Klassifizierer für alle Ausschnitte, Plausibilitätsprüfung, dreifache Kopf/Zahl-Entscheidung.
 - `augen.py`: Kontrast-Augenzählung (A) und Vergleich mit dem Klassifizierer (B).
 - `spiel.py`: Vollständigkeit (genau 3 Würfel, 1 Münze), Summe oder Produkt, Rechenweg.
 - `main.py`: Fenster mit Livebild, Rahmen und erkannter Augenzahl an jedem Würfel, Statusbereich, Button „Scharfschalten“, Bilder pro Sekunde.
