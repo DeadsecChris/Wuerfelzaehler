@@ -1,0 +1,7 @@
+# PyTorch wird VORHER separat installiert (siehe EINRICHTUNG.md):
+#   Laptop ohne NVIDIA-Grafikkarte: pip install torch torchvision
+#   Gaming-PC mit NVIDIA:           Befehl von https://pytorch.org (CUDA-Variante)
+ultralytics>=8.3
+opencv-python>=4.9
+albumentations>=1.4
+numpy

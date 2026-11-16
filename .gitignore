@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Bilder und Datensätze liegen im OneDrive (Bilder_wuerfelzaehler), nicht im Repo
+*.jpg
+*.jpeg
+*.png
+dataset*/
+gedaechtnis/
+
+# Trainingsläufe von Ultralytics (fertige Modelle kommen nach Wuerfelprogramm/modelle/)
+runs/
+*.pt
+!Wuerfelprogramm/modelle/*.pt
+
+# Vortrainierte Startmodelle lädt Ultralytics automatisch herunter
+yolo11n*.pt
