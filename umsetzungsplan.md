@@ -94,7 +94,7 @@ Siehe „Folgen für die Dokumente“. Namen ergänzen.
 ### Schritt 3: Probedurchlauf (Woche 1)
 1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen.
 2. In Label Studio mit den 8 Klassen labeln, als YOLO exportieren.
-3. Skript `scripts/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
+3. Skript `Wuerfelprogramm/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
 4. Probemodell Stufe 1 mit 30 Epochen trainieren, Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
 Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 
@@ -106,15 +106,16 @@ Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 
 ### Schritt 5: Labeln und Datensätze (gemeinsam, Woche 2)
 - Labeln mit den 8 Klassen, gegenseitige Stichprobenkontrolle (je 20 Bilder).
-- `scripts/datensaetze.py`:
-  1. Aufteilung 70/15/15 der Originale **vor** der Augmentation (Test = Testsitzung).
+- `Wuerfelprogramm/datensaetze.py`:
+  0. Liest `Teachbilder/` und `Testbilder/` aus dem OneDrive-Bilderordner, Labels neben dem Bild oder im Unterordner `labels/` (Label-Studio-Export, Klassen über `classes.txt`). Schreibt einen `bericht.txt` mit Anzahlen je Klasse und Warnungen (fehlende Labels, falscher Klassenordner).
+  1. Teachbilder werden **vor** der Augmentation in train und val (15 %, nur Trainingskontrolle) geteilt, Testbilder gehen nur nach test.
   2. Stufe 1: Klassen zu `wuerfel` und `muenze` zusammenfassen, 3 Varianten je Trainingsbild mit Albumentations (Drehung, Helligkeit, Kontrast, Zuschnitt, **Graustufen**, **Farbton**, Rauschen, Unschärfe; kein Spiegeln).
-  3. Stufe 2: Würfel und Münze ausschneiden (mit etwas Rand), in Graustufen umwandeln, nach `augen_1` … `augen_6`, `kopf`, `zahl` sortieren. Drehen ist erlaubt; Spiegeln nur bei Würfel-Ausschnitten (Augen sind symmetrisch), nie bei der Münze.
+  3. Stufe 2: Würfel und Münze ausschneiden (mit etwas Rand), in Graustufen umwandeln, nach `augen_1` … `augen_6`, `kopf`, `zahl` sortieren. Keine Varianten offline; die Klassifikation bekommt Ultralytics' eigene Bildvariation, mit `fliplr=0` wegen der Münze.
 
 ### Schritt 6: Training (Christian, Woche 3, auf dem Gaming-PC)
 ```
-yolo detect train data=dataset_stufe1/data.yaml model=yolo11n.pt imgsz=640 epochs=100 fliplr=0 patience=20
-yolo classify train data=dataset_stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50
+yolo detect train data=datensaetze/stufe1/data.yaml model=yolo11n.pt imgsz=640 epochs=100 fliplr=0 patience=20
+yolo classify train data=datensaetze/stufe2 model=yolo11n-cls.pt imgsz=96 epochs=50 fliplr=0
 ```
 - Mit starker Grafikkarte dauert jedes Training nur Minuten. So können viele Varianten ausprobiert werden.
 - Ergebnis: `modelle/stufe1.pt` und `modelle/stufe2.pt` (ins Repo, sind klein).
