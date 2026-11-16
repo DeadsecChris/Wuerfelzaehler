@@ -129,3 +129,7 @@ python pruefe_umgebung.py --kamera http://192.168.0.23:8080/video
 | `C:\Users\chris\OneDrive\Bilder_wuerfelzaehler` | Fotos (`Teachbilder/`, `Testbilder/`), nicht im Repo |
 
 Die `.gitignore` sorgt dafür, dass Bilder, Datensätze, Trainingsläufe und die `.venv` nicht versehentlich nach GitHub gehen.
+
+## Programm starten
+
+Nach der Einrichtung alles über **`Wuerfelprogramm/starten.py`** starten (Doppelklick oder `python starten.py`). Die Datei wechselt automatisch in die `.venv` und bietet ein Menü: Umgebung prüfen, Kameratest, Datensätze erzeugen, Label Studio. Direkt geht es auch, z. B. `python starten.py datensaetze`. `starten.py` installiert nichts; fehlt etwas, verweist sie auf `einrichten.bat`.
