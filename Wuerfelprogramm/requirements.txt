@@ -1,6 +1,10 @@
-# PyTorch wird VORHER separat installiert (siehe EINRICHTUNG.md):
-#   Laptop ohne NVIDIA-Grafikkarte: pip install torch torchvision
-#   Gaming-PC mit NVIDIA:           Befehl von https://pytorch.org (CUDA-Variante)
+# Pakete für den Würfel-Zähler.
+# Am einfachsten: einrichten.bat doppelklicken. Das Skript legt .venv an,
+# installiert PyTorch passend zum Rechner (mit NVIDIA-Grafikkarte die CUDA-Variante)
+# und danach alles aus dieser Datei.
+#
+# Von Hand (in der aktivierten .venv): erst PyTorch, dann
+#   pip install -r requirements.txt
 ultralytics>=8.3
 opencv-python>=4.9
 albumentations>=1.4
