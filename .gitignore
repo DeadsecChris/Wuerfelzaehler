@@ -8,6 +8,7 @@ __pycache__/
 *.jpeg
 *.png
 dataset*/
+datensaetze/
 gedaechtnis/
 
 # Trainingsläufe von Ultralytics (fertige Modelle kommen nach Wuerfelprogramm/modelle/)
