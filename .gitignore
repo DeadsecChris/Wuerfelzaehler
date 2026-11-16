@@ -17,3 +17,6 @@ runs/
 
 # Vortrainierte Startmodelle lädt Ultralytics automatisch herunter
 yolo11n*.pt
+
+# Protokoll des Einrichtungsskripts
+einrichten.log
