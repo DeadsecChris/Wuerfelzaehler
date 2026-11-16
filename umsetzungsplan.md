@@ -86,7 +86,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
 - Auf dem Gaming-PC zuerst PyTorch mit CUDA von pytorch.org installieren, dann prüfen: `python -c "import torch; print(torch.cuda.is_available())"` muss `True` ausgeben.
 - Label Studio am besten in einer eigenen Umgebung installieren (`pip install label-studio`), weil es viele eigene Pakete mitbringt.
 - Probelauf: `yolo predict model=yolo11n.pt source=0` öffnet die Webcam.
-- Bilder und Datensätze **nicht** in GitHub (zu groß), sondern über OneDrive oder USB-Stick zwischen den Rechnern austauschen. Über GitHub läuft nur der Code und das fertige Modell.
+- Bilder und Datensätze **nicht** in GitHub (zu groß). Bilderordner seit 16.11.2026: `C:\Users\chris\OneDrive\Bilder_wuerfelzaehler` (über Teams/SharePoint mit Niklas geteilt), mit `Teachbilder/` und `Testbilder/`, darin je `einzel/<8 Klassen>` und `wurf/`. Teach und Test werden gezielt gewählt. Über GitHub läuft nur der Code und die fertigen Modelldateien (das Programm braucht zum Laufen keine Bilder).
 
 ### Schritt 2: Drehbuch anpassen und abgeben (bis 18.11.2026, 22:00)
 Siehe „Folgen für die Dokumente“. Namen ergänzen.
@@ -99,7 +99,7 @@ Siehe „Folgen für die Dokumente“. Namen ergänzen.
 Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 
 ### Schritt 4: Alle Fotos (Niklas, Woche 2)
-- Rund 300 Originalfotos nach Aufnahmeplan (E1–E3 Einzel, W1–W5 Würfe), dabei die Würfel wechseln. Benennung wie im Drehbuch, Ablage in `rohbilder/`.
+- Rund 300 Originalfotos nach Aufnahmeplan (E1–E3 Einzel, W1–W5 Würfe), dabei die Würfel wechseln. Benennung wie im Drehbuch, Ablage im OneDrive-Bilderordner (`Teachbilder/` bzw. `Testbilder/`).
 - Im Aufnahmeprotokoll pro Foto notieren, welche Würfel verwendet wurden.
 - Etwa 10 % ungültige Würfe (Kante, gestapelt, halb verdeckt) zum Testen der Fehlermeldungen.
 - **Testsitzung an einem anderen Tag:** 45 Fotos, davon ein Teil mit den 2 „fremden“ Würfeln, die im Training nicht vorkommen.
@@ -178,7 +178,7 @@ wuerfelzaehler/
 ├── projekt_brain.md
 └── umsetzungsplan.md
 ```
-Fotos und Datensätze liegen lokal bzw. im OneDrive, nicht in GitHub.
+Fotos liegen in `C:\Users\chris\OneDrive\Bilder_wuerfelzaehler` (Teams/SharePoint), erzeugte Datensätze lokal, nicht in GitHub.
 
 ## Noch offen
 1. Würfel: 3 fürs Training (WA, WB, WC), 2 Testwürfel (T1, T2) organisiert das Team.
