@@ -153,7 +153,7 @@ Nach dem Korrekturprinzip aus dem Schere-Stein-Papier-Projekt (`teachable-ki` im
 Lehren aus dem Schere-Stein-Papier-Projekt, die wir gleich einbauen:
 - **Immer vom Ausgangsstand aus trainieren** (Originaldaten + Gedächtnis), nie das schon nachtrainierte Modell weiter verändern. So bleibt jedes Training nachvollziehbar, und ein schlechtes Nachtraining lässt sich zurücknehmen; das vorige Modell wird mit Datum gesichert.
 - **Klassen ausgleichen:** Das Skript zeigt vor dem Training, wie oft jede Klasse im Gedächtnis vorkommt, und gewichtet seltene Klassen stärker.
-- **Wirkung messen:** Jedes fünfte Gedächtnisbild wird nicht trainiert, sondern als „Live-Test“ zurückgehalten. Der ursprüngliche Testdatensatz bleibt unangetastet. Nur so lässt sich zeigen, ob das Nachtraining wirklich besser macht (beim Schere-Stein-Papier-Projekt fehlte genau das).
+- **Wirkung messen (Entscheidung Chris, 16.11.):** Kein automatisches Zurückhalten. Bilder werden gezielt in die Ordner `teach/` oder `test/` im lokalen Bilderordner gelegt. Im Testmodus wählt man beim Speichern per Taste, ob das Bild nach `teach` (Standard) oder `test` kommt. Testbilder werden nie trainiert, sodass sich Vorher/Nachher sauber vergleichen lässt.
 - **Hintergrund beachten:** Fotos aus dem Testmodus stammen meist aus demselben Aufbau. Ab und zu Untergrund und Licht wechseln, damit die KI nicht den Tisch lernt.
 
 Über das Lastenheft hinaus (nach Zeit):
