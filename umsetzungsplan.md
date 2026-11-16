@@ -1,6 +1,6 @@
 # Umsetzungsplan: Würfel-Zähler
 
-Stand: 16.11.2026 (5. Fassung: eine 1-Euro-Münze, alle Euro-Münzen als spätere Erweiterung). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
+Stand: 16.11.2026 (6. Fassung: Testmodus mit Bestätigung und Korrektur). Grundlage: Lastenheft vom 12.11.2026, `projekt_brain.md` und Chris' Vorgaben vom 16.11.2026.
 
 ## Vorgaben vom 16.11.2026
 
@@ -135,6 +135,26 @@ Aufbau in `app/`:
 - `main.py`: Fenster mit Livebild, Rahmen und erkannter Augenzahl an jedem Würfel, Statusbereich, Button „Scharfschalten“, Bilder pro Sekunde.
 - Stabilitätsfilter: Ergebnis nach 5 gleichen Bildern, spätestens 2 s nach Stillstand.
 - Ziel ≥ 10 Bilder pro Sekunde auch auf dem Laptop ohne Grafikkarte prüfen (zwei kleine Modelle plus OpenCV sollten das schaffen; sonst Stufe 2 nur auf stabilen Bildern ausführen).
+- `testmodus.py`: **Bestätigen und Korrigieren** (Wunsch von Chris, siehe unten).
+
+#### Testmodus: Bestätigen und Korrigieren (Human in the Loop)
+Nach dem Korrekturprinzip aus dem Schere-Stein-Papier-Projekt (`teachable-ki` im Unibrain): Die KI rät, der Mensch bestätigt oder korrigiert, alles landet in einem Gedächtnis, und damit wird nachtrainiert.
+
+1. **Ergebnis anzeigen:** Ist ein Wurf stabil erkannt, friert das Programm das Bild ein und zeigt an jedem Objekt eine Nummer und die erkannte Klasse (z. B. ① 4, ② 2, ③ 5, ④ Kopf) sowie das Ergebnis.
+2. **Bestätigen:** Taste `J` = alles richtig. `N` = etwas ist falsch. `F` = Fehler, Runde verwerfen (z. B. Hand im Bild, Würfel rollt noch); es wird nichts gespeichert.
+3. **Korrigieren:** Nach `N` wählt man das falsche Objekt (Klick oder Nummer) und gibt den richtigen Wert ein (`1`–`6`, `K`, `Z`). Fehlt ein Rahmen oder ist einer zu viel, wählt man „Rahmen falsch“. Dann wird das Bild zum Nachlabeln in Label Studio abgelegt, weil sich ein fehlender Rahmen nicht per Taste ergänzen lässt.
+4. **Gedächtnis:** Jede bestätigte oder korrigierte Runde speichert
+   - das Kamerabild in `gedaechtnis/bilder/`,
+   - eine Label-Datei im YOLO-Format mit den (korrigierten) 8 Klassen in `gedaechtnis/labels/` (gleiche Form wie die Originaldaten, kann also direkt ins Training),
+   - eine Zeile in `gedaechtnis/protokoll.csv`: Zeit, Bildname, KI-Ergebnis, korrigiertes Ergebnis, richtig ja/nein, Sicherheit je Objekt, ob Kontrast-Zählung und Klassifizierer einig waren, verwendete Würfel.
+5. **Auswertung:** Aus dem Protokoll berechnet das Programm laufend die Quote der vollständig richtigen Würfe (unser Ziel ≥ 90 %) und zeigt die häufigsten Verwechslungen. Das sind direkt die Live-Zahlen für die Präsentation.
+6. **Nachtraining:** `scripts/nachtrainieren.py` nimmt die Originaldaten plus das Gedächtnis, erzeugt beide Datensätze neu und trainiert Stufe 1 und Stufe 2 (auf dem Gaming-PC in Minuten). Anders als bei Schere-Stein-Papier nicht automatisch beim Beenden, sondern bewusst per Skript, weil YOLO-Training länger dauert.
+
+Lehren aus dem Schere-Stein-Papier-Projekt, die wir gleich einbauen:
+- **Immer vom Ausgangsstand aus trainieren** (Originaldaten + Gedächtnis), nie das schon nachtrainierte Modell weiter verändern. So bleibt jedes Training nachvollziehbar, und ein schlechtes Nachtraining lässt sich zurücknehmen; das vorige Modell wird mit Datum gesichert.
+- **Klassen ausgleichen:** Das Skript zeigt vor dem Training, wie oft jede Klasse im Gedächtnis vorkommt, und gewichtet seltene Klassen stärker.
+- **Wirkung messen:** Jedes fünfte Gedächtnisbild wird nicht trainiert, sondern als „Live-Test“ zurückgehalten. Der ursprüngliche Testdatensatz bleibt unangetastet. Nur so lässt sich zeigen, ob das Nachtraining wirklich besser macht (beim Schere-Stein-Papier-Projekt fehlte genau das).
+- **Hintergrund beachten:** Fotos aus dem Testmodus stammen meist aus demselben Aufbau. Ab und zu Untergrund und Licht wechseln, damit die KI nicht den Tisch lernt.
 
 Über das Lastenheft hinaus (nach Zeit):
 1. Funktioniert mit beliebigen Standardwürfeln (Hauptziel dieser Fassung).
@@ -145,14 +165,15 @@ Aufbau in `app/`:
 6. Später Handy: Modelle nach ONNX oder TFLite exportieren (`yolo export model=stufe1.pt format=tflite`). Bis zum 16.12. reicht das Handy als Kamera; eine eigene App ist ein Ausblick.
 
 ### Schritt 9: Testen und Präsentation (Woche 4)
-- 50 Live-Würfe mit gemischten Würfeln, darunter fremde Würfel, Quote ausrechnen.
+- 50 Live-Würfe mit gemischten Würfeln, darunter die Testwürfel T1 und T2, im **Testmodus** durchführen. Die Quote steht danach direkt im Protokoll.
+- Einmal nachtrainieren und mit dem zurückgehaltenen Live-Test zeigen, ob es besser wurde (Vorher/Nachher für die Präsentation).
 - Präsentation: Aufbau, zweistufiger Ansatz, Datensatz, Verwechslungsmatrizen, Vergleich Kontrast vs. KI vs. beides, Live-Demo mit einem Würfel aus dem Publikum.
 
 ## Ordnerstruktur im Repo (Vorschlag)
 ```
 wuerfelzaehler/
 ├── app/                  Anwendungsprogramm
-├── scripts/              datensaetze.py, eval_wuerfe.py
+├── scripts/              datensaetze.py, eval_wuerfe.py, nachtrainieren.py
 ├── modelle/              stufe1.pt, stufe2.pt
 ├── projekt_brain.md
 └── umsetzungsplan.md
@@ -160,4 +181,4 @@ wuerfelzaehler/
 Fotos und Datensätze liegen lokal bzw. im OneDrive, nicht in GitHub.
 
 ## Noch offen
-1. Wie viele verschiedene Würfel habt ihr schon?
+1. Würfel: 3 fürs Training (WA, WB, WC), 2 Testwürfel (T1, T2) organisiert das Team.
