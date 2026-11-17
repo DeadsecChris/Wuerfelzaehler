@@ -26,7 +26,7 @@ cover = {
     3: "KI-Anwendung mit Bilderkennung",
     4: "Planung des Bilddatensatzes für die Würfel- und Münzerkennung",
     6: "Christian Maschke, Niklas Bäricke",
-    8: "16. November 2026",
+    8: "16. November 2026 (2. Fassung)",
 }
 for i, text in cover.items():
     p = d.paragraphs[i]
@@ -178,7 +178,7 @@ table([
 heading("1.3 Bildmotive und Material", 2)
 bullet("Bisher 3 verschiedene Standardwürfel, bezeichnet als WA, WB und WC (Liste mit Foto im Aufnahmeprotokoll). "
        "Ziel sind mindestens 8 verschiedene Würfel (Farbe, Größe, helle und dunkle Augen, runde und scharfe Kanten).", "Würfel: ")
-bullet("Mindestens 2 weitere Würfel (T1, T2) werden nur für die Testbilder verwendet und kommen im Training nie vor. "
+bullet("2 weitere Würfel (T1, T2), die das Team noch besorgt, werden nur für die Testbilder verwendet und kommen im Training nie vor. "
        "Damit wird geprüft, ob das Programm auch unbekannte Würfel erkennt.", "Testwürfel: ")
 bullet("Immer dieselbe 1-Euro-Münze, Kopf und Zahl ungefähr gleich oft.", "Münze: ")
 bullet("Wurffläche mit Rand (Tablett), Untergründe dunkelgrüner Filz, Holztisch und weißes Papier.", "Aufbau: ")
@@ -237,34 +237,34 @@ table([
 ], widths=[60, 50, 50, 40, 40, 40, 40, 50])
 
 heading("4 Technische Bildvariation (Data Augmentation)", 1)
-para("Aus jedem Trainingsbild entstehen 3 Varianten mit der Bibliothek Albumentations. Jede Variante kombiniert zufällig 2 bis 3 Verfahren. "
-     "Die Rahmen der Objekte werden automatisch mitverschoben.")
+para("Aus jedem Trainingsbild entstehen 3 Varianten mit der Bibliothek Albumentations (Skript datensaetze.py). Jede Variante kombiniert zufällig 2 bis 3 der folgenden Verfahren. "
+     "Die Rahmen der Objekte werden automatisch mitverschoben. Geht dabei ein Objekt verloren, wird die Variante verworfen.")
 table([
     ["Verfahren", "Einstellung", "Zweck"],
-    ["Drehen", "beliebiger Winkel, 0–360°", "Würfel liegen in jeder Richtung"],
-    ["Helligkeit", "± 25 %", "wechselndes Licht"],
-    ["Kontrast", "± 20 %", "wechselndes Licht, verschiedene Kameras"],
-    ["Zuschneiden und Skalieren", "Ausschnitt 80–100 %, Zoom 80–120 %", "verschiedene Abstände"],
-    ["Farbsättigung", "± 30 %", "verschiedene Kameras"],
-    ["Farbton", "stark verschoben", "Würfelfarbe soll keine Rolle spielen"],
-    ["Graustufen", "bei rund 30 % der Varianten", "Erkennung über Form und Kontrast statt Farbe"],
+    ["Drehen und Skalieren", "beliebiger Winkel 0–360°, Zoom 80–120 %", "Würfel liegen in jeder Richtung, verschiedene Abstände"],
+    ["Helligkeit und Kontrast", "Helligkeit ± 25 %, Kontrast ± 20 %", "wechselndes Licht, verschiedene Kameras"],
+    ["Farbton und Sättigung", "Farbton stark verschoben, Sättigung ± 30 %", "Würfelfarbe soll keine Rolle spielen"],
+    ["Graustufen", "ganzes Bild grau", "Erkennung über Form und Kontrast statt Farbe"],
     ["Bildrauschen", "leicht", "schlechtere Kameras, wenig Licht"],
     ["Unschärfe", "leicht", "Bewegung, Fokus"],
 ], widths=[110, 150, 170])
-bullet("Ziffer und Motiv der Münze wären sonst spiegelverkehrt. Das gilt für ganze Bilder und für Münz-Ausschnitte. "
-       "Nur Würfel-Ausschnitte der Stufe 2 dürfen gespiegelt werden, weil Würfelaugen symmetrisch sind.", "Kein Spiegeln: ")
-bullet("Beim Zuschneiden bleiben alle Objekte vollständig im Bild.", "Objekte vollständig: ")
-bullet("Die Ausschnitte für Stufe 2 werden in Graustufen umgewandelt und gedreht. So zählt nur der Kontrast zwischen Würfel und Augen.", "Stufe 2: ")
+bullet("Ziffer und Motiv der Münze wären sonst spiegelverkehrt. Das gilt für ganze Bilder und für alle Ausschnitte. "
+       "Auch beim Training wird die eingebaute Spiegelung von YOLO ausgeschaltet (fliplr=0).", "Kein Spiegeln: ")
+bullet("Varianten, bei denen ein Objekt aus dem Bild gerät, werden verworfen.", "Objekte vollständig: ")
+bullet("Die Ausschnitte für Stufe 2 werden in Graustufen umgewandelt. So zählt nur der Kontrast zwischen Würfel und Augen. "
+       "Für sie werden keine Varianten gespeichert; die Bildvariation übernimmt das Training selbst.", "Stufe 2: ")
 
 heading("5 Aufteilung in Trainings- und Testdaten", 1)
 table([
     ["Datensatz", "Originalbilder", "Varianten", "Zweck"],
-    ["Training", "210 (70 %)", "630", "Lernen"],
-    ["Validierung", "45 (15 %)", "keine", "Kontrolle während des Trainings"],
-    ["Test", "45 (15 %) + mind. 20 mit Testwürfeln", "keine", "unabhängige Endbewertung"],
+    ["Training", "rund 85 % der Teachbilder", "3 je Bild", "Lernen"],
+    ["Validierung", "rund 15 % der Teachbilder (zufällig, reproduzierbar)", "keine", "Kontrolle während des Trainings"],
+    ["Test", "alle Bilder im Ordner Testbilder (rund 45 + mind. 20 mit Testwürfeln)", "keine", "unabhängige Endbewertung"],
 ], widths=[80, 150, 60, 150])
 bullet("Erst aufteilen, dann Varianten erzeugen, und zwar nur aus Trainingsbildern.", "Reihenfolge: ")
-bullet("Die Testbilder entstehen in einer eigenen Sitzung an einem anderen Tag, mit rund 15 % der Bilder jeder Aufnahmesituation.", "Testsitzung: ")
+bullet("Welche Bilder getestet werden, legt das Team gezielt fest: Sie kommen in den Ordner Testbilder. Es wird nichts automatisch zurückgehalten. "
+       "Die Testbilder entstehen in einer eigenen Sitzung an einem anderen Tag, mit Bildern aus jeder Aufnahmesituation.", "Testbilder: ")
+bullet("Fotos, die später im Testmodus des Programms bestätigt oder korrigiert werden, speichert das Programm auf Wunsch in Teachbilder (zum Nachtrainieren) oder Testbilder.", "Testmodus: ")
 bullet("Die Testwürfel T1 und T2 kommen nur in Testbildern vor.", "Unbekannte Würfel: ")
 bullet("Kein Bild, keine Variante und kein Ausschnitt liegt in mehr als einem Datensatz. Die Ausschnitte für Stufe 2 werden erst nach der Aufteilung erzeugt.", "Trennung: ")
 bullet("Mindestens 90 % der Testwürfe werden vollständig richtig erkannt (alle 3 Würfel und die Münze), getrennt ausgewertet für bekannte und unbekannte Würfel.", "Ziel: ")
@@ -284,22 +284,27 @@ bullet("Über Klassenordner (augen_1 … augen_6, kopf, zahl). Die Ausschnitte u
 bullet("Jeder prüft 20 zufällige gelabelte Bilder des anderen.", "Kontrolle: ")
 
 heading("6.3 Ordnerstruktur", 2)
+para("Fotos (OneDrive, über Teams/SharePoint im Team geteilt):")
 struktur = [
-    "wuerfel-zaehler/",
-    "├── rohbilder/              Originalfotos, unverändert (Sicherung)",
+    "Bilder_wuerfelzaehler/",
+    "├── Teachbilder/            Bilder zum Trainieren",
     "│   ├── einzel/",
-    "│   ├── wurf/",
-    "│   └── test_sitzung/",
-    "├── labels_original/        Export aus Label Studio (8 Klassen)",
-    "├── dataset_stufe1/         Objekterkennung: wuerfel, muenze",
+    "│   │   ├── wuerfel_1/ … wuerfel_6/",
+    "│   │   ├── muenze_kopf/",
+    "│   │   └── muenze_zahl/",
+    "│   └── wurf/               ganze Würfe (+ labels/ aus Label Studio)",
+    "├── Testbilder/             gleicher Aufbau, nur für den Test",
+    "└── aufnahmeprotokoll.xlsx  Strichliste, verwendete Würfel, Stand",
+    "",
+    "Erzeugt vom Skript datensaetze.py (lokal, im Programmordner):",
+    "datensaetze/",
+    "├── stufe1/                 Objekterkennung: wuerfel, muenze",
     "│   ├── images/ train, val, test",
     "│   ├── labels/ train, val, test",
     "│   └── data.yaml           Klassenliste und Pfade",
-    "├── dataset_stufe2/         Ausschnitte für den Klassifizierer",
-    "│   ├── train/ augen_1 … augen_6, kopf, zahl",
-    "│   ├── val/   (gleiche Ordner)",
-    "│   └── test/  (gleiche Ordner)",
-    "└── aufnahmeprotokoll.xlsx  Strichliste, verwendete Würfel, Stand",
+    "├── stufe2/                 Graustufen-Ausschnitte für den Klassifizierer",
+    "│   └── train, val, test/   je augen_1 … augen_6, kopf, zahl",
+    "└── bericht.txt             Anzahl je Klasse, Warnungen",
 ]
 for line in struktur:
     p = d.add_paragraph()
@@ -310,7 +315,7 @@ for line in struktur:
     p.paragraph_format.space_after = Pt(0)
     _append(p._p)
 sp = d.add_paragraph(); _append(sp._p)
-para("Die Fotos werden nicht in GitHub abgelegt (zu groß), sondern lokal bzw. im OneDrive. In GitHub liegen nur der Code und die fertigen Modelle.")
+para("Die Labels liegen neben dem Bild (gleicher Name, .txt) oder im Unterordner labels/ (Export aus Label Studio). Die Fotos werden nicht in GitHub abgelegt (zu groß); dort liegen nur der Code und die fertigen Modelle. Das Programm selbst braucht zum Laufen keine Fotos.")
 
 heading("7 Aufgabenverteilung im Team", 1)
 table([
