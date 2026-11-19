@@ -8,7 +8,7 @@ Aufruf:
     Doppelklick auf starten.py             Menü
     python starten.py                      Menü
     python starten.py datensaetze          direkt einen Punkt starten
-                     pruefen | kamera | datensaetze | labelstudio
+                     pruefen | kamera | fotos | datensaetze | labelstudio
 """
 import os
 import subprocess
@@ -52,6 +52,11 @@ def kamera() -> int:
     return starte(sys.executable, "pruefe_umgebung.py", "--yolo", quelle)
 
 
+def fotos() -> int:
+    quelle = input("Kamera-Nummer oder URL [0]: ").strip() or "0"
+    return starte(sys.executable, "fotos.py", "--kamera", quelle)
+
+
 def datensaetze() -> int:
     code = starte(sys.executable, "datensaetze.py")
     bericht = ORDNER / "datensaetze" / "bericht.txt"
@@ -71,8 +76,9 @@ def labelstudio() -> int:
 PUNKTE = {
     "1": ("pruefen", "Umgebung prüfen", pruefen),
     "2": ("kamera", "Kameratest mit YOLO", kamera),
-    "3": ("datensaetze", "Datensätze aus den Fotos erzeugen", datensaetze),
+    "3": ("fotos", "Fotos aufnehmen (in den OneDrive-Bilderordner)", fotos),
     "4": ("labelstudio", "Label Studio starten", labelstudio),
+    "5": ("datensaetze", "Datensätze aus den Fotos erzeugen", datensaetze),
 }
 
 

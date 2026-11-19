@@ -92,7 +92,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
 Siehe „Folgen für die Dokumente“. Namen ergänzen.
 
 ### Schritt 3: Probedurchlauf (Woche 1)
-1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen.
+1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen (`starten.py` → „Fotos aufnehmen“, speichert mit Drehbuch-Namen direkt in den OneDrive-Ordner).
 2. In Label Studio mit den 8 Klassen labeln, als YOLO exportieren.
 3. Skript `Wuerfelprogramm/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
 4. Probemodell Stufe 1 mit 30 Epochen trainieren, Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
