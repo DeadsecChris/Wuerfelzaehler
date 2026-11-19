@@ -4,10 +4,17 @@ Quelle (OneDrive, Standard: C:\\Users\\chris\\OneDrive\\Bilder_wuerfelzaehler):
     Teachbilder/einzel/<klasse>/bild.jpg   Einzelaufnahmen, Klasse über den Ordner
     Teachbilder/wurf/bild.jpg              ganze Würfe
     Testbilder/...                         gleicher Aufbau, nur für den Test
-Zu jedem Bild gehört eine YOLO-Label-Datei mit gleichem Namen (bild.txt), entweder
-direkt neben dem Bild oder in einem Unterordner "labels" daneben (so exportiert es
-Label Studio). Liegt dort eine classes.txt, werden die Klassen über ihre Namen
-zugeordnet, sonst gilt die Reihenfolge aus dem Lastenheft (KLASSEN unten).
+Einzelaufnahmen brauchen KEIN Label: Die Klasse kommt aus dem Ordnernamen, den
+Rahmen um das Objekt sucht das Skript selbst (Objekt hebt sich vom Untergrund ab).
+Zur Kontrolle landet jedes Bild verkleinert mit eingezeichnetem Rahmen in
+datensaetze/kontrolle/. Passt ein Rahmen nicht, das Bild löschen oder neu
+fotografieren (oder in Label Studio labeln, ein vorhandenes Label hat Vorrang).
+
+Wurfbilder (mehrere Objekte) brauchen eine YOLO-Label-Datei mit gleichem Namen
+(bild.txt), entweder direkt neben dem Bild oder in einem Unterordner "labels"
+daneben (so exportiert es Label Studio). Liegt dort eine classes.txt, werden die
+Klassen über ihre Namen zugeordnet, sonst gilt die Reihenfolge aus dem
+Lastenheft (KLASSEN unten). Wurfbilder ohne Label werden übersprungen.
 
 Ergebnis (Standard: Wuerfelprogramm/datensaetze):
     stufe1/images/{train,val,test}, stufe1/labels/..., stufe1/data.yaml
@@ -15,6 +22,7 @@ Ergebnis (Standard: Wuerfelprogramm/datensaetze):
         train enthält zusätzlich je Bild N Varianten (Data Augmentation)
     stufe2/{train,val,test}/{augen_1..augen_6,kopf,zahl}/*.jpg
         Graustufen-Ausschnitte jedes Objekts für den Klassifizierer
+    kontrolle/<klasse>/*.jpg   automatisch gefundene Rahmen zum Nachsehen
     bericht.txt   Anzahl je Klasse und Datensatz, Warnungen
 
 Teach wird in train und val aufgeteilt (val nur zur Kontrolle während des
@@ -59,6 +67,7 @@ class Bild:
     pfad: Path
     art: str                        # "teach" oder "test"
     objekte: list[Objekt] = field(default_factory=list)
+    auto_klasse: str | None = None  # Einzelaufnahme ohne Label: Rahmen wird automatisch gesucht
 
 
 class Bericht:
@@ -137,6 +146,12 @@ def sammle_bilder(quelle: Path, bericht: Bericht) -> list[Bild]:
                 continue
             ordner_klasse = pfad.parent.name if pfad.parent.parent.name == "einzel" else None
             labelpfad = finde_label(pfad)
+            if labelpfad is None and ordner_klasse:
+                if ordner_klasse not in STUFE2:
+                    bericht.warnung(f"Unbekannter Klassenordner: {pfad.parent.relative_to(quelle)}")
+                    continue
+                bilder.append(Bild(pfad, art, auto_klasse=ordner_klasse))
+                continue
             if labelpfad is None:
                 bericht.warnung(f"Kein Label: {pfad.relative_to(quelle)} (übersprungen)")
                 continue
@@ -163,6 +178,80 @@ def lies_bild(pfad: Path) -> np.ndarray | None:
     # imdecode statt imread, damit Umlaute im Pfad (Windows) funktionieren
     daten = np.fromfile(str(pfad), dtype=np.uint8)
     return cv2.imdecode(daten, cv2.IMREAD_COLOR) if daten.size else None
+
+
+def verkleinere(bild: np.ndarray, max_seite: int) -> np.ndarray:
+    """Handyfotos (z. B. 4000x3000) verkleinern, YOLO trainiert ohnehin mit 640."""
+    h, w = bild.shape[:2]
+    f = max_seite / max(h, w)
+    if max_seite <= 0 or f >= 1:
+        return bild
+    return cv2.resize(bild, (round(w * f), round(h * f)), interpolation=cv2.INTER_AREA)
+
+
+def finde_rahmen(bild: np.ndarray) -> tuple[float, float, float, float] | None:
+    """Sucht das eine Objekt (Würfel oder Münze) auf einer Einzelaufnahme.
+
+    Der Untergrund wird am Bildrand geschätzt. Alles, was sich farblich davon
+    abhebt oder deutliche Kanten hat, zählt als Objekt; die größte zusammenhängende
+    Fläche ergibt den Rahmen (YOLO-Format, 0..1). None, wenn nichts Sinnvolles
+    gefunden wurde.
+    """
+    h0, w0 = bild.shape[:2]
+    f = 600 / max(h0, w0)
+    klein = cv2.resize(bild, (max(1, round(w0 * f)), max(1, round(h0 * f))), interpolation=cv2.INTER_AREA)
+    klein = cv2.GaussianBlur(klein, (5, 5), 0)
+    h, w = klein.shape[:2]
+    lab = cv2.cvtColor(klein, cv2.COLOR_BGR2LAB).astype(np.float32)
+
+    # 1. Abstand zur Untergrundfarbe (Median des Bildrands). Helligkeit zählt nur
+    #    halb, damit Schatten weniger stören. Schwelle aus der Streuung am Rand, so
+    #    bleibt gemusterter Untergrund (Holzmaserung) Untergrund.
+    r = max(2, round(min(h, w) * 0.04))
+    rand = np.concatenate([lab[:r].reshape(-1, 3), lab[-r:].reshape(-1, 3),
+                           lab[:, :r].reshape(-1, 3), lab[:, -r:].reshape(-1, 3)])
+    gewicht = np.array([0.5, 1.0, 1.0], np.float32)
+    mitte = np.median(rand, axis=0)
+    abstand = np.linalg.norm((lab - mitte) * gewicht, axis=2)
+    rand_abstand = np.linalg.norm((rand - mitte) * gewicht, axis=1)
+    schwelle = max(12.0, 1.2 * float(np.percentile(rand_abstand, 99)) + 5)
+    maske_farbe = (abstand > schwelle).astype(np.uint8) * 255
+
+    # 2. Kanten (hilft bei Würfeln in Untergrundfarbe), geschlossen zu Flächen
+    grau = cv2.cvtColor(klein, cv2.COLOR_BGR2GRAY)
+    kanten = cv2.Canny(grau, 50, 150)
+    kanten = cv2.dilate(kanten, np.ones((5, 5), np.uint8), iterations=2)
+
+    maske = cv2.bitwise_or(maske_farbe, kanten)
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
+    maske = cv2.morphologyEx(maske, cv2.MORPH_CLOSE, k, iterations=2)
+    maske = cv2.morphologyEx(maske, cv2.MORPH_OPEN, k)
+
+    konturen, _ = cv2.findContours(maske, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not konturen:
+        return None
+    # Größte Fläche plus alle, die mindestens 15 % so groß sind (z. B. einzelne
+    # helle Augen auf einem dunklen Würfel, dessen Kanten kaum sichtbar sind)
+    flaechen = [cv2.contourArea(c) for c in konturen]
+    groesste = max(flaechen)
+    punkte = np.concatenate([c for c, a in zip(konturen, flaechen) if a >= 0.15 * groesste])
+    x, y, bw, bh = cv2.boundingRect(punkte)
+    # die Kanten wurden oben um ca. 4 Pixel verbreitert, das wieder abziehen
+    x, y, bw, bh = x + 4, y + 4, max(1, bw - 8), max(1, bh - 8)
+    anteil = (bw * bh) / (w * h)
+    if anteil < 0.002 or anteil > 0.95:           # winzig (Staub) oder ganzes Bild (Untergrund)
+        return None
+    return ((x + bw / 2) / w, (y + bh / 2) / h, bw / w, bh / h)
+
+
+def kontrollbild(bild: np.ndarray, box) -> np.ndarray:
+    k = verkleinere(bild, 480).copy()
+    h, w = k.shape[:2]
+    xm, ym, bw, bh = box
+    p1 = (round((xm - bw / 2) * w), round((ym - bh / 2) * h))
+    p2 = (round((xm + bw / 2) * w), round((ym + bh / 2) * h))
+    cv2.rectangle(k, p1, p2, (0, 255, 0), 2)
+    return k
 
 
 def schreib_bild(pfad: Path, bild: np.ndarray) -> None:
@@ -238,6 +327,8 @@ def main() -> int:
     ap.add_argument("--val-anteil", type=float, default=0.15, help="Anteil der Teachbilder für val (Standard 0.15)")
     ap.add_argument("--varianten", type=int, default=3, help="Varianten je Trainingsbild (0 = keine)")
     ap.add_argument("--rand", type=float, default=0.1, help="Rand um Ausschnitte für Stufe 2 (Standard 10 %%)")
+    ap.add_argument("--max-seite", type=int, default=1280,
+                    help="lange Bildseite für Stufe 1 begrenzen (Standard 1280, 0 = nicht verkleinern)")
     ap.add_argument("--seed", type=int, default=42, help="Zufallszahl für reproduzierbare Aufteilung")
     args = ap.parse_args()
 
@@ -250,7 +341,7 @@ def main() -> int:
     bericht.info(f"Ziel:   {args.ziel}")
     bilder = sammle_bilder(args.quelle, bericht)
     if not bilder:
-        bericht.warnung("Keine gelabelten Bilder gefunden.")
+        bericht.warnung("Keine Bilder gefunden (Einzelaufnahmen in Teachbilder/einzel/<klasse>/ ablegen).")
         args.ziel.mkdir(parents=True, exist_ok=True)
         bericht.speichern(args.ziel / "bericht.txt")
         return 1
@@ -273,6 +364,8 @@ def main() -> int:
     zaehler1: dict[str, Counter] = defaultdict(Counter)
     zaehler2: dict[str, Counter] = defaultdict(Counter)
     namen_vergeben: set[str] = set()
+    zaehler_auto: Counter = Counter()
+    anzahl: Counter = Counter()             # tatsächlich geschriebene Originale je split
 
     for bild in bilder:
         split = split_von[id(bild)]
@@ -285,11 +378,25 @@ def main() -> int:
             name += "_x"
         namen_vergeben.add(name)
 
+        if bild.auto_klasse:
+            box = finde_rahmen(daten)
+            if box is None:
+                bericht.warnung(f"Kein Objekt gefunden: {bild.pfad.relative_to(args.quelle)} (übersprungen)")
+                zaehler_auto["fehlgeschlagen"] += 1
+                continue
+            bild.objekte = [Objekt(bild.auto_klasse, box)]
+            schreib_bild(args.ziel / "kontrolle" / bild.auto_klasse / f"{name}.jpg", kontrollbild(daten, box))
+            zaehler_auto["gefunden"] += 1
+
+        # Ausschnitte für Stufe 2 aus dem Original (volle Auflösung), Stufe 1 verkleinert
+        original = daten
+        daten = verkleinere(daten, args.max_seite)
         schreib_stufe1(stufe1, split, name, daten, bild.objekte)
+        anzahl[split] += 1
         for o in bild.objekte:
             zaehler1[split][STUFE1[stufe1_klasse(o.klasse)]] += 1
         for i, o in enumerate(bild.objekte, 1):
-            teil = ausschnitt(daten, o.box, args.rand)
+            teil = ausschnitt(original, o.box, args.rand)
             if teil is None:
                 bericht.warnung(f"Ausschnitt zu klein: {bild.pfad.name}, Objekt {i}")
                 continue
@@ -312,10 +419,12 @@ def main() -> int:
     (stufe1 / "data.yaml").write_text(yaml, encoding="utf-8")
 
     # Bericht
-    anzahl = Counter(split_von[id(b)] for b in bilder)
     bericht.info("")
     bericht.info(f"Originalbilder: train {anzahl['train']}, val {anzahl['val']}, test {anzahl['test']}")
     bericht.info(f"Varianten (nur train): {zaehler1['train (Varianten)']['bilder']}")
+    if zaehler_auto:
+        bericht.info(f"Einzelaufnahmen ohne Label: Rahmen automatisch gefunden {zaehler_auto['gefunden']}, "
+                     f"nicht gefunden {zaehler_auto['fehlgeschlagen']}. Bitte datensaetze/kontrolle/ ansehen.")
     bericht.info("")
     bericht.info("Stufe 1, Objekte je Klasse (Originale):")
     for split in ("train", "val", "test"):

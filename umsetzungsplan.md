@@ -45,7 +45,9 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
 
 **Warum nicht nur die Kontrast-Zählung?** Das Lastenheft verlangt eine selbst trainierte KI, die die Klassen erkennt. Mit Stufe 1 und dem Klassifizierer B ist das klar erfüllt, und die Kontrast-Zählung ist ein Zusatz, der das System robuster macht. In der Präsentation lässt sich außerdem zeigen, wie gut klassische Bildverarbeitung und KI jeweils allein sind und was ihre Kombination bringt.
 
-**Labeln bleibt fast gleich:** In Label Studio wird weiter mit den 8 Klassen aus dem Lastenheft gelabelt (`wuerfel_1` … `wuerfel_6`, `muenze_kopf`, `muenze_zahl`). Ein Skript macht daraus automatisch beide Datensätze: Für Stufe 1 werden `wuerfel_1–6` zu `wuerfel` und `muenze_kopf`/`muenze_zahl` zu `muenze` zusammengefasst, für Stufe 2 werden alle Objekte ausgeschnitten und nach Unterklasse sortiert. Einmal labeln, zwei Modelle trainieren.
+**Einzelaufnahmen ohne Labeln (Chris, 19.11.):** Fotos (auch vom Handy) einfach in den passenden Klassenordner `einzel/<klasse>/` legen. `datensaetze.py` nimmt die Klasse aus dem Ordnernamen und sucht den Rahmen um das Objekt selbst (Objekt hebt sich vom Untergrund ab). Zur Kontrolle zeigt `datensaetze/kontrolle/` jedes Bild mit Rahmen. Nur Wurfbilder mit mehreren Objekten müssen gelabelt werden.
+
+**Labeln für Wurfbilder:** In Label Studio wird weiter mit den 8 Klassen aus dem Lastenheft gelabelt (`wuerfel_1` … `wuerfel_6`, `muenze_kopf`, `muenze_zahl`). Ein Skript macht daraus automatisch beide Datensätze: Für Stufe 1 werden `wuerfel_1–6` zu `wuerfel` und `muenze_kopf`/`muenze_zahl` zu `muenze` zusammengefasst, für Stufe 2 werden alle Objekte ausgeschnitten und nach Unterklasse sortiert. Einmal labeln, zwei Modelle trainieren.
 
 ## Folgen für die Dokumente
 
@@ -92,7 +94,7 @@ Kamerabild ──► Stufe 1: YOLO findet Objekte (Form, Oberklasse)
 Siehe „Folgen für die Dokumente“. Namen ergänzen.
 
 ### Schritt 3: Probedurchlauf (Woche 1)
-1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen.
+1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen (`starten.py` → „Fotos aufnehmen“, speichert mit Drehbuch-Namen direkt in den OneDrive-Ordner).
 2. In Label Studio mit den 8 Klassen labeln, als YOLO exportieren.
 3. Skript `Wuerfelprogramm/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
 4. Probemodell Stufe 1 mit 30 Epochen trainieren, Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
@@ -105,7 +107,7 @@ Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 - **Testsitzung an einem anderen Tag:** 45 Fotos, davon ein Teil mit den 2 „fremden“ Würfeln, die im Training nicht vorkommen.
 
 ### Schritt 5: Labeln und Datensätze (gemeinsam, Woche 2)
-- Labeln mit den 8 Klassen, gegenseitige Stichprobenkontrolle (je 20 Bilder).
+- Einzelaufnahmen: nur `datensaetze/kontrolle/` durchsehen, falsche Rahmen löschen oder neu fotografieren. Wurfbilder mit den 8 Klassen labeln, gegenseitige Stichprobenkontrolle (je 20 Bilder).
 - `Wuerfelprogramm/datensaetze.py`:
   0. Liest `Teachbilder/` und `Testbilder/` aus dem OneDrive-Bilderordner, Labels neben dem Bild oder im Unterordner `labels/` (Label-Studio-Export, Klassen über `classes.txt`). Schreibt einen `bericht.txt` mit Anzahlen je Klasse und Warnungen (fehlende Labels, falscher Klassenordner).
   1. Teachbilder werden **vor** der Augmentation in train und val (15 %, nur Trainingskontrolle) geteilt, Testbilder gehen nur nach test.

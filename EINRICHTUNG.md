@@ -132,4 +132,4 @@ Die `.gitignore` sorgt dafür, dass Bilder, Datensätze, Trainingsläufe und die
 
 ## Programm starten
 
-Nach der Einrichtung alles über **`Wuerfelprogramm/starten.py`** starten (Doppelklick oder `python starten.py`). Die Datei wechselt automatisch in die `.venv` und bietet ein Menü: Umgebung prüfen, Kameratest, Datensätze erzeugen, Label Studio. Direkt geht es auch, z. B. `python starten.py datensaetze`. `starten.py` installiert nichts; fehlt etwas, verweist sie auf `einrichten.bat`.
+Nach der Einrichtung alles über **`Wuerfelprogramm/starten.py`** starten (Doppelklick oder `python starten.py`). Die Datei wechselt automatisch in die `.venv` und bietet ein Menü: Umgebung prüfen, Kameratest, Fotos aufnehmen, Label Studio, Datensätze erzeugen. Direkt geht es auch, z. B. `python starten.py datensaetze`. `starten.py` installiert nichts; fehlt etwas, verweist sie auf `einrichten.bat`.
