@@ -8,7 +8,7 @@ Aufruf:
     Doppelklick auf starten.py             Menü
     python starten.py                      Menü
     python starten.py datensaetze          direkt einen Punkt starten
-                     pruefen | kamera | fotos | datensaetze | labelstudio
+                     pruefen | kamera | fotos | labelstudio | datensaetze | trainieren | live
 """
 import os
 import subprocess
@@ -65,6 +65,18 @@ def datensaetze() -> int:
     return code
 
 
+def trainieren() -> int:
+    print("p = Probelauf (wenige Epochen, ca. 15-30 Min. auf dem Laptop)")
+    print("v = volles Training (auf dem Laptop mehrere Stunden, besser Gaming-PC)")
+    art = input("Auswahl [p]: ").strip().lower() or "p"
+    return starte(sys.executable, "trainieren.py", *(["--probe"] if art != "v" else []))
+
+
+def live() -> int:
+    quelle = input("Kamera-Nummer oder URL [0]: ").strip() or "0"
+    return starte(sys.executable, "live.py", "--kamera", quelle)
+
+
 def labelstudio() -> int:
     if not LABELSTUDIO.exists():
         print("Label Studio ist nicht installiert. Bitte einrichten.bat ausführen und Label Studio mit 'j' wählen.")
@@ -79,6 +91,8 @@ PUNKTE = {
     "3": ("fotos", "Fotos aufnehmen (in den OneDrive-Bilderordner)", fotos),
     "4": ("labelstudio", "Label Studio starten", labelstudio),
     "5": ("datensaetze", "Datensätze aus den Fotos erzeugen", datensaetze),
+    "6": ("trainieren", "Modelle trainieren", trainieren),
+    "7": ("live", "Live-Erkennung mit Kamera", live),
 }
 
 

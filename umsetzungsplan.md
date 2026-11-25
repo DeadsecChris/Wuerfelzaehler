@@ -97,7 +97,7 @@ Siehe „Folgen für die Dokumente“. Namen ergänzen.
 1. 50 Wurffotos mit verschiedenen Würfeln aufnehmen (`starten.py` → „Fotos aufnehmen“, speichert mit Drehbuch-Namen direkt in den OneDrive-Ordner).
 2. In Label Studio mit den 8 Klassen labeln, als YOLO exportieren.
 3. Skript `Wuerfelprogramm/datensaetze.py` erzeugt daraus Stufe 1 (2 Klassen) und Stufe 2 (Ausschnitte, 8 Unterklassen).
-4. Probemodell Stufe 1 mit 30 Epochen trainieren, Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
+4. Probetraining beider Stufen (`starten.py` → 6 „Modelle trainieren“, Probelauf), dann live testen (→ 7 „Live-Erkennung“). Prototyp der Kontrast-Zählung auf den Ausschnitten testen.
 Ziel: Die ganze Kette läuft einmal durch, Fehler im Aufbau fallen früh auf.
 
 ### Schritt 4: Alle Fotos (Niklas, Woche 2)
