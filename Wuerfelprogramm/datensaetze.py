@@ -192,56 +192,66 @@ def verkleinere(bild: np.ndarray, max_seite: int) -> np.ndarray:
 def finde_rahmen(bild: np.ndarray) -> tuple[float, float, float, float] | None:
     """Sucht das eine Objekt (Würfel oder Münze) auf einer Einzelaufnahme.
 
-    Der Untergrund wird am Bildrand geschätzt. Alles, was sich farblich davon
-    abhebt oder deutliche Kanten hat, zählt als Objekt; die größte zusammenhängende
-    Fläche ergibt den Rahmen (YOLO-Format, 0..1). None, wenn nichts Sinnvolles
-    gefunden wurde.
+    Der Untergrund wird pro Bildstelle geschätzt (großer Medianfilter, so stören
+    Lichtverläufe nicht). Als Objekt zählt, was sich deutlich in der Farbe
+    unterscheidet, sehr viel dunkler ist (schwarzer Würfel, Augen) oder klare
+    Kanten hat. Schatten sind nur etwas dunkler und gleich gefärbt und fallen
+    deshalb heraus. Flächen am Bildrand (Tischkante, angeschnittene Gegenstände)
+    werden ignoriert. Ergebnis: Rahmen im YOLO-Format (0..1) oder None.
     """
     h0, w0 = bild.shape[:2]
     f = 600 / max(h0, w0)
     klein = cv2.resize(bild, (max(1, round(w0 * f)), max(1, round(h0 * f))), interpolation=cv2.INTER_AREA)
-    klein = cv2.GaussianBlur(klein, (5, 5), 0)
+    klein = cv2.GaussianBlur(klein, (3, 3), 0)
     h, w = klein.shape[:2]
-    lab = cv2.cvtColor(klein, cv2.COLOR_BGR2LAB).astype(np.float32)
+    lab = cv2.cvtColor(klein, cv2.COLOR_BGR2LAB)
 
-    # 1. Abstand zur Untergrundfarbe (Median des Bildrands). Helligkeit zählt nur
-    #    halb, damit Schatten weniger stören. Schwelle aus der Streuung am Rand, so
-    #    bleibt gemusterter Untergrund (Holzmaserung) Untergrund.
-    r = max(2, round(min(h, w) * 0.04))
-    rand = np.concatenate([lab[:r].reshape(-1, 3), lab[-r:].reshape(-1, 3),
-                           lab[:, :r].reshape(-1, 3), lab[:, -r:].reshape(-1, 3)])
-    gewicht = np.array([0.5, 1.0, 1.0], np.float32)
-    mitte = np.median(rand, axis=0)
-    abstand = np.linalg.norm((lab - mitte) * gewicht, axis=2)
-    rand_abstand = np.linalg.norm((rand - mitte) * gewicht, axis=1)
-    schwelle = max(12.0, 1.2 * float(np.percentile(rand_abstand, 99)) + 5)
-    maske_farbe = (abstand > schwelle).astype(np.uint8) * 255
+    # Untergrund je Bildstelle: Median über ein großes Fenster (Objekte sind klein)
+    k = (min(h, w) // 3) | 1
+    grund = cv2.merge([cv2.medianBlur(c, k) for c in cv2.split(lab)]).astype(np.float32)
+    lab_f = lab.astype(np.float32)
+    hell = lab_f[..., 0]
+    hell_grund = np.maximum(grund[..., 0], 1)
+    farbe = np.linalg.norm(lab_f[..., 1:] - grund[..., 1:], axis=2)
 
-    # 2. Kanten (hilft bei Würfeln in Untergrundfarbe), geschlossen zu Flächen
-    grau = cv2.cvtColor(klein, cv2.COLOR_BGR2GRAY)
-    kanten = cv2.Canny(grau, 50, 150)
-    kanten = cv2.dilate(kanten, np.ones((5, 5), np.uint8), iterations=2)
+    maske = ((farbe > 12) | (hell < 0.5 * hell_grund) | (hell > hell_grund + 60)).astype(np.uint8) * 255
+    kanten = cv2.Canny(cv2.cvtColor(klein, cv2.COLOR_BGR2GRAY), 80, 200)
+    maske = cv2.bitwise_or(maske, cv2.dilate(kanten, np.ones((3, 3), np.uint8)))
+    maske = cv2.morphologyEx(maske, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)))
+    maske = cv2.morphologyEx(maske, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
 
-    maske = cv2.bitwise_or(maske_farbe, kanten)
-    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-    maske = cv2.morphologyEx(maske, cv2.MORPH_CLOSE, k, iterations=2)
-    maske = cv2.morphologyEx(maske, cv2.MORPH_OPEN, k)
-
-    konturen, _ = cv2.findContours(maske, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not konturen:
+    anzahl, _, werte, _ = cv2.connectedComponentsWithStats(maske)
+    rand = 3
+    kandidaten = []
+    for i in range(1, anzahl):
+        x, y, bw, bh, flaeche = werte[i]
+        if flaeche < 0.0003 * h * w:
+            continue                               # Staub, Rauschen
+        if x <= rand or y <= rand or x + bw >= w - rand or y + bh >= h - rand:
+            continue                               # berührt den Bildrand
+        kandidaten.append((int(flaeche), int(x), int(y), int(bw), int(bh)))
+    if not kandidaten:
         return None
-    # Größte Fläche plus alle, die mindestens 15 % so groß sind (z. B. einzelne
-    # helle Augen auf einem dunklen Würfel, dessen Kanten kaum sichtbar sind)
-    flaechen = [cv2.contourArea(c) for c in konturen]
-    groesste = max(flaechen)
-    punkte = np.concatenate([c for c, a in zip(konturen, flaechen) if a >= 0.15 * groesste])
-    x, y, bw, bh = cv2.boundingRect(punkte)
-    # die Kanten wurden oben um ca. 4 Pixel verbreitert, das wieder abziehen
-    x, y, bw, bh = x + 4, y + 4, max(1, bw - 8), max(1, bh - 8)
-    anteil = (bw * bh) / (w * h)
-    if anteil < 0.002 or anteil > 0.95:           # winzig (Staub) oder ganzes Bild (Untergrund)
+    kandidaten.sort(reverse=True)
+    _, x1, y1, bw, bh = kandidaten[0]
+    x2, y2 = x1 + bw, y1 + bh
+    # nahe Teile dazunehmen (z. B. einzelne Augen eines dunklen Würfels)
+    geaendert = True
+    while geaendert:
+        geaendert = False
+        abstand = 0.3 * max(x2 - x1, y2 - y1)
+        for fl, x, y, bw, bh in kandidaten[1:]:
+            if fl < 0.05 * kandidaten[0][0]:
+                continue
+            if x >= x1 and y >= y1 and x + bw <= x2 and y + bh <= y2:
+                continue
+            if x - abstand <= x2 and x + bw + abstand >= x1 and y - abstand <= y2 and y + bh + abstand >= y1:
+                x1, y1, x2, y2 = min(x1, x), min(y1, y), max(x2, x + bw), max(y2, y + bh)
+                geaendert = True
+    anteil = (x2 - x1) * (y2 - y1) / (w * h)
+    if anteil > 0.5:
         return None
-    return ((x + bw / 2) / w, (y + bh / 2) / h, bw / w, bh / h)
+    return ((x1 + x2) / 2 / w, (y1 + y2) / 2 / h, (x2 - x1) / w, (y2 - y1) / h)
 
 
 def kontrollbild(bild: np.ndarray, box) -> np.ndarray:
