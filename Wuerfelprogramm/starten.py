@@ -66,9 +66,12 @@ def datensaetze() -> int:
 
 
 def trainieren() -> int:
-    print("p = Probelauf (wenige Epochen, ca. 15-30 Min. auf dem Laptop)")
-    print("v = volles Training (auf dem Laptop mehrere Stunden, besser Gaming-PC)")
+    print("p = Probelauf beide Stufen (auf dem Laptop ca. 45 Min.)")
+    print("2 = nur Stufe 2 (Augenzahl, Kopf/Zahl), volle Epochen, auf dem Laptop wenige Minuten")
+    print("v = volles Training beide Stufen (auf dem Laptop mehrere Stunden, besser Gaming-PC)")
     art = input("Auswahl [p]: ").strip().lower() or "p"
+    if art == "2":
+        return starte(sys.executable, "trainieren.py", "--stufe", "2")
     return starte(sys.executable, "trainieren.py", *(["--probe"] if art != "v" else []))
 
 

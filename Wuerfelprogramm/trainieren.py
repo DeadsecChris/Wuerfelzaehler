@@ -10,8 +10,8 @@ Die fertigen Modelle landen in modelle/stufe1.pt und modelle/stufe2.pt,
 die Trainingsverläufe (Kurven, Beispielbilder) in runs/.
 
 Aufruf:
-    python trainieren.py              voll (Stufe 1: 100, Stufe 2: 50 Epochen)
-    python trainieren.py --probe      schneller Probelauf (20 / 15 Epochen), für den Laptop
+    python trainieren.py              voll (Stufe 1: 100, Stufe 2: 150 Epochen)
+    python trainieren.py --probe      schneller Probelauf (20 / 80 Epochen), für den Laptop
     python trainieren.py --stufe 2    nur eine Stufe
 Mit NVIDIA-Grafikkarte wird sie automatisch benutzt, sonst läuft es auf der CPU
 (dann dauert das volle Training mehrere Stunden: besser auf dem Gaming-PC).
@@ -109,7 +109,7 @@ def stufe2(epochen: int, dev: str) -> bool:
     shutil.copytree(ordner / "train", trainordner / "train")
     shutil.copytree(ordner / "val", trainordner / "val")
     modell = YOLO("yolo11n-cls.pt")
-    modell.train(data=str(trainordner), imgsz=96, epochs=epochen, patience=20, fliplr=0.0,
+    modell.train(data=str(trainordner), imgsz=96, epochs=epochen, patience=40, fliplr=0.0,
                  device=dev, workers=2, project=str(LAEUFE), name="stufe2", exist_ok=True, plots=True)
     if not sichere_modell(LAEUFE / "stufe2", MODELLE / "stufe2.pt"):
         return False
@@ -137,10 +137,10 @@ def main() -> int:
     ap.add_argument("--stufe", choices=["1", "2", "beide"], default="beide")
     ap.add_argument("--probe", action="store_true", help="schneller Probelauf mit wenigen Epochen")
     ap.add_argument("--epochen1", type=int, help="Epochen Stufe 1 (Standard 100, Probe 20)")
-    ap.add_argument("--epochen2", type=int, help="Epochen Stufe 2 (Standard 50, Probe 15)")
+    ap.add_argument("--epochen2", type=int, help="Epochen Stufe 2 (Standard 150, Probe 80)")
     args = ap.parse_args()
     e1 = args.epochen1 or (20 if args.probe else 100)
-    e2 = args.epochen2 or (15 if args.probe else 50)
+    e2 = args.epochen2 or (80 if args.probe else 150)   # Stufe 2 ist schnell (Sekunden je Epoche)
 
     dev = geraet()
     start = time.time()

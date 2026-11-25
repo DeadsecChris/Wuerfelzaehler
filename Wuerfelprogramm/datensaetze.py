@@ -412,6 +412,13 @@ def main() -> int:
                 continue
             schreib_bild(stufe2 / split / STUFE2[o.klasse] / f"{name}_obj{i}.jpg", teil)
             zaehler2[split][STUFE2[o.klasse]] += 1
+            if split == "train":
+                # gedrehte Kopien: Augenzahl und Münzseite bleiben beim Drehen gleich
+                for grad, drehung in ((90, cv2.ROTATE_90_CLOCKWISE), (180, cv2.ROTATE_180),
+                                      (270, cv2.ROTATE_90_COUNTERCLOCKWISE)):
+                    schreib_bild(stufe2 / split / STUFE2[o.klasse] / f"{name}_obj{i}_rot{grad}.jpg",
+                                 cv2.rotate(teil, drehung))
+                    zaehler2["train (gedreht)"][STUFE2[o.klasse]] += 1
 
         if split == "train" and pipelines:
             for v in range(1, args.varianten + 1):
@@ -445,6 +452,8 @@ def main() -> int:
     bericht.info("  " + " " * 6 + "".join(f"{k:>9s}" for k in unterklassen))
     for split in ("train", "val", "test"):
         bericht.info(f"  {split:5s} " + "".join(f"{zaehler2[split][k]:9d}" for k in unterklassen))
+    bericht.info("  (train zusätzlich je Ausschnitt 3 gedrehte Kopien: "
+                 f"{sum(zaehler2['train (gedreht)'].values())})")
     for split in ("train", "val", "test"):
         fehlend = [k for k in unterklassen if zaehler2[split][k] == 0]
         if fehlend and anzahl[split]:
