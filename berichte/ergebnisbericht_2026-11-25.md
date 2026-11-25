@@ -13,6 +13,7 @@ Stand: Probetraining auf dem Laptop (nur CPU) mit den ersten 128 Einzelfotos.
 | davon Münze Kopf/Zahl | 4 Objekte | **100 %** richtig |
 | davon Würfel-Augenzahl | 12 Objekte | **67 %** richtig (8 von 12) |
 | **Lernaufwand** | | 128 Fotos, **0** Bilder von Hand gelabelt, ca. **54 Minuten** Rechenzeit |
+| **Nachtrag: Stufe 2 nachtrainiert** (gedrehte Ausschnitte, siehe Abschnitt 7) | 16 Ausschnitte | **81 %** richtig (vorher 56 %), val **100 %** |
 
 **Fazit:** Würfel und Münze **finden** kann die KI schon zuverlässig. Die **Augenzahl lesen** ist der Schwachpunkt. Stufe 2 hat im Probelauf nur 24 Sekunden trainiert und wird gerade verbessert (siehe Abschnitt 6).
 
@@ -136,6 +137,32 @@ Zum Vergleich: Ein „volles“ Training ist mit 100 Epochen für Stufe 1 geplan
 3. **Mehr Fotos** nach Drehbuch (Situationen E2/E3: anderer Untergrund, anderes Licht, schräg) und die Testwürfel T1/T2.
 4. **Kontrast-Zählung** der Augen als zweite Meinung für Stufe 2, vor allem für 4/5/6.
 5. **Volles Training** auf dem Gaming-PC.
+
+## 7. Nachtrag: Stufe 2 nachtrainiert (25.11.2026, nachmittags)
+
+Umsetzung von Schritt 1 aus Abschnitt 6: Jeder Trainingsausschnitt hat 3 gedrehte Kopien bekommen (90°, 180°, 270°). Statt 15 Epochen waren bis zu 150 erlaubt, mit vorzeitigem Stopp, wenn 40 Epochen lang keine Verbesserung kommt. Stufe 1 blieb unverändert.
+
+| | vorher (Probelauf) | nachher |
+|---|---|---|
+| Trainingsausschnitte | 95 | 380 (95 + 285 gedreht) |
+| Epochen | 15 | 50 (vorzeitig gestoppt, bestes Modell aus Epoche 10) |
+| Rechenzeit (Laptop-CPU) | 24 Sekunden | ca. 4 Minuten |
+| **val** (17 Ausschnitte) | 71 % (bestes Modell) | **100 %** |
+| **test** (16 Ausschnitte, nur Stufe 2) | 56 % (9/16) | **81 % (13/16)** |
+
+Testbilder nach Klasse (nur Stufe 2):
+
+| Klasse | augen_1 | augen_2 | augen_3 | augen_4 | augen_5 | augen_6 | kopf | zahl |
+|---|---|---|---|---|---|---|---|---|
+| vorher | 50 % | 100 % | 50 % | 0 % | 50 % | 0 % | 100 % | 100 % |
+| **nachher** | **100 %** | **100 %** | **100 %** | **100 %** | **50 %** | **0 %** | **100 %** | **100 %** |
+
+Die 3 verbliebenen Fehler:
+- 5 Augen erkannt als 4
+- 6 Augen erkannt als 4
+- 6 Augen erkannt als 3
+
+**Bewertung:** Die gedrehten Kopien haben Stufe 2 deutlich verbessert, mit 25 Prozentpunkten mehr auf den Testbildern bei 4 Minuten Rechenzeit. Würfel 1 bis 4, Kopf und Zahl werden jetzt durchgehend richtig erkannt. Schwach bleiben nur 5 und 6 Augen, also die Würfel mit den meisten, eng stehenden Punkten. Dort „übersieht“ die KI Punkte und nennt eine zu kleine Zahl. Abhilfe: mehr Fotos von 5 und 6 (auch schräg und mit anderem Licht) und die Kontrast-Zählung als zweite Meinung. Die Messung der ganzen Kette (Stufe 1 + Stufe 2) mit dem neuen Modell steht noch aus und folgt mit dem Livetest.
 
 ---
 *Messung: Modelle `modelle/stufe1.pt` und `stufe2.pt` vom 25.11.2026 (Probelauf), nachgemessen auf den Datensätzen val/test aus `datensaetze.py`. Ultralytics 8.4, Schwelle Stufe 1: 50 %.*
